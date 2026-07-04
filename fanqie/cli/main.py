@@ -506,6 +506,43 @@ def audit(book_id, chapter_number, retry):
 
 
 # ============================================================
+# rewrite
+# ============================================================
+
+@main.command()
+@click.argument("book_id")
+@click.argument("chapter_number", type=int)
+@click.option("--instruction", "-i", default="", help="重写意见（你对这一章的不满与要求）")
+@click.option("--mode", "-m", type=click.Choice(["refine", "rewrite"]), default="refine",
+              help="refine=按意见微调（默认）；rewrite=按意见大幅重写")
+def rewrite(book_id, chapter_number, instruction, mode):
+    """按你的意见重写指定章节（覆盖前自动备份为 .bak）."""
+    orch = _load_orchestrator(book_id)
+    if orch is None:
+        return
+
+    mode_label = "微调" if mode == "refine" else "大幅重写"
+    console.print(f"[cyan]正在{mode_label}第{chapter_number}章...[/cyan]")
+    if instruction:
+        console.print(f"[dim]意见：{instruction}[/dim]")
+
+    try:
+        with console.status(f"AI 正在{mode_label}..."):
+            revised = orch.rewrite_chapter(chapter_number, instruction=instruction, mode=mode)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        return
+    except Exception as e:
+        console.print(f"[red]重写失败：{e}[/red]")
+        return
+
+    console.print(f"[green]✓ 第{chapter_number}章已重写完成[/green]")
+    console.print(f"  标题：{revised.title}")
+    console.print(f"  字数：{revised.word_count}")
+    console.print(f"[dim]原章已备份为 {chapter_number:04d}.md.bak[/dim]")
+
+
+# ============================================================
 # status
 # ============================================================
 

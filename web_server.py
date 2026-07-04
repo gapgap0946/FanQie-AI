@@ -174,6 +174,8 @@ class FanqieAPI(BaseHTTPRequestHandler):
             self._chat(body)
         elif parsed.path == "/api/audit":
             self._audit_chapter(body)
+        elif parsed.path == "/api/rewrite":
+            self._rewrite_chapter(body)
         elif parsed.path == "/api/delete":
             self._delete_book(body)
         elif parsed.path == "/api/config":
@@ -407,6 +409,23 @@ class FanqieAPI(BaseHTTPRequestHandler):
             return
         cmd = [sys.executable, "-m", "fanqie.cli.main", "audit", book_id, str(chapter_number), "-r", str(retry)]
         task_id = _start_task(cmd, str(FANQIE_DIR), f"审计第{chapter_number}章", timeout=600)
+        self._send_json({"task_id": task_id, "status": "pending"})
+
+    def _rewrite_chapter(self, body):
+        book_id = body.get("id", "")
+        chapter_number = body.get("chapter_number", 0)
+        instruction = body.get("instruction", "")
+        mode = body.get("mode", "refine")
+        if mode not in ("refine", "rewrite"):
+            mode = "refine"
+        if not book_id or not chapter_number:
+            self._send_json({"error": "missing params"}, 400)
+            return
+        cmd = [sys.executable, "-m", "fanqie.cli.main", "rewrite", book_id, str(chapter_number), "-m", mode]
+        if instruction:
+            cmd.extend(["-i", instruction])
+        label = ("微调" if mode == "refine" else "重写") + f"第{chapter_number}章"
+        task_id = _start_task(cmd, str(FANQIE_DIR), label, timeout=600)
         self._send_json({"task_id": task_id, "status": "pending"})
 
     def _export_book(self, body):

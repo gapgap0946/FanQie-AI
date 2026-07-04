@@ -83,6 +83,8 @@ a { color:var(--accent); text-decoration:none; }
 .chapter-title-text { flex:1; }
 .chapter-words { color:var(--text2); font-size:11px; width:60px; text-align:right; font-variant-numeric:tabular-nums; }
 .chapter-score { width:40px; text-align:right; font-size:11px; font-variant-numeric:tabular-nums; }
+.chapter-toolbar { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0 12px; border-bottom:1px solid var(--border); margin-bottom:12px; }
+.chapter-toolbar-title { font-size:14px; font-weight:600; color:var(--text); }
 
 .story-content { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:20px; font-size:14px; line-height:1.8; white-space:pre-wrap; max-height:70vh; overflow-y:auto; }
 .story-content h1 { font-size:20px; margin-bottom:16px; }
@@ -239,12 +241,32 @@ a { color:var(--accent); text-decoration:none; }
   </div>
 </div>
 
+<!-- Rewrite Modal -->
+<div class="modal-overlay" id="rewriteModal" role="dialog" aria-modal="true" aria-label="重写章节" style="display:none">
+  <div class="modal">
+    <h2>✏️ 重写第 <span id="rewriteChapterNum"></span> 章</h2>
+    <div class="form-group">
+      <label class="form-label" for="rewriteMode">重写方式</label>
+      <select class="form-select" id="rewriteMode" name="rewrite-mode">
+        <option value="refine">微调 — 保留主体情节，只按意见调整</option>
+        <option value="rewrite">重写 — 按意见大幅改写本章</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label" for="rewriteInstruction">你的意见（哪里不满意、想怎么改）</label><textarea class="form-textarea" id="rewriteInstruction" name="rewrite-instruction" placeholder="如：开头太拖沓，直接从打斗写起；主角性格要更狠一点…"></textarea></div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">原章会自动备份为 .bak 文件，可手动回滚。</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="hideRewriteModal()">取消</button>
+      <button class="btn btn-primary" id="btnRewrite" onclick="doRewrite()">开始重写</button>
+    </div>
+  </div>
+</div>
+
 <!-- Genre Modal -->
 <div class="modal-overlay" id="genreModal" role="dialog" aria-modal="true" aria-label="题材管理" style="display:none">
   <div class="modal" style="max-width:700px;">
     <h2>🎭 题材管理</h2>
-    <div style="display:flex;gap:12px;">
-      <div style="flex:1;">
+      <div style="display:flex;gap:12px;">
+        <div style="flex:1;">
         <label class="form-label" for="genreSelect">现有题材</label>
         <select class="form-select" id="genreSelect" name="genre-select" size="8" onchange="loadGenreDetail()" style="height:auto;"></select>
       </div>
@@ -435,8 +457,49 @@ async function viewChapter(num) {
   try {
     const res = await fetch(API + '/api/chapter?id=' + currentBookId + '&ch=' + num);
     const data = await res.json();
-    el.innerHTML = `<div class="story-content">${data.content ? escHtml(data.content) : '（空）'}</div>`;
+    const toolbar = `
+      <div class="chapter-toolbar">
+        <span class="chapter-toolbar-title">第${num}章</span>
+        <button type="button" class="btn btn-sm" onclick="showRewriteModal(${num})">对本章不满意？重写</button>
+      </div>`;
+    el.innerHTML = toolbar + `<div class="story-content">${data.content ? escHtml(data.content) : '（空）'}</div>`;
   } catch(e) { el.innerHTML = '<div class="loading">加载失败</div>'; }
+}
+
+let rewriteTargetChapter = null;
+function showRewriteModal(num) {
+  rewriteTargetChapter = num;
+  document.getElementById('rewriteChapterNum').textContent = num;
+  document.getElementById('rewriteInstruction').value = '';
+  document.getElementById('rewriteMode').value = 'refine';
+  document.getElementById('rewriteModal').style.display = 'flex';
+  document.getElementById('rewriteInstruction').focus();
+}
+function hideRewriteModal() { document.getElementById('rewriteModal').style.display = 'none'; }
+
+async function doRewrite() {
+  if (!rewriteTargetChapter) return;
+  const num = rewriteTargetChapter;
+  const mode = document.getElementById('rewriteMode').value;
+  const instruction = document.getElementById('rewriteInstruction').value.trim();
+  const btn = document.getElementById('btnRewrite');
+  btn.disabled = true; btn.textContent = '提交中…';
+  hideRewriteModal();
+
+  try {
+    const res = await fetch(API + '/api/rewrite', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id: currentBookId, chapter_number: num, mode, instruction })
+    });
+    const data = await res.json();
+    if (data.task_id) {
+      showProgress((mode === 'refine' ? '微调' : '重写') + '第' + num + '章');
+      pollTask(data.task_id, () => { loadBookDetail(); viewChapter(num); });
+    } else {
+      toast('启动失败: ' + (data.error||'未知错误'), 'error');
+    }
+  } catch(e) { toast('请求失败: ' + e.message, 'error'); }
+  btn.disabled = false; btn.textContent = '开始重写';
 }
 
 // ---- Story ----
@@ -526,7 +589,7 @@ function stopPolling() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 }
 
-async function pollTask(taskId) {
+async function pollTask(taskId, onDone) {
   stopPolling();
   pollTimer = setInterval(async () => {
     try {
@@ -535,7 +598,7 @@ async function pollTask(taskId) {
       updateProgress(task);
       if (task.status === 'done' || task.status === 'error' || task.status === 'timeout') {
         stopPolling();
-        if (task.status === 'done') toast(taskLabel + ' 完成！', 'success');
+        if (task.status === 'done') { toast(taskLabel + ' 完成！', 'success'); if (onDone) onDone(); }
         else toast(taskLabel + ' 失败', 'error');
       }
     } catch(e) {}

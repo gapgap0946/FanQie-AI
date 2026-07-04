@@ -34,6 +34,7 @@ from .composer import compose_context
 from .writer import write_chapter
 from .settler import settle_chapter, finalize_book
 from .auditor import audit_and_revise
+from .reviser import rewrite_chapter as _rewrite_chapter_impl
 from .intervener import Intervention, render_intervention_prompt
 from .architect import (
     generate_foundation, present_foundation_summary,
@@ -518,7 +519,73 @@ class Orchestrator:
 
         return status
 
+    def rewrite_chapter(self, chapter_number: int, instruction: str = "", mode: str = "refine") -> Chapter:
+        """按用户意见重写指定章节.
+
+        mode="refine" 微调 / "rewrite" 大幅重写。覆盖前会将原章备份为 .bak。
+        """
+        existing = self.repo.get_chapter(chapter_number)
+        if existing is None:
+            raise ValueError(f"第{chapter_number}章不存在，无法重写")
+
+        original = Chapter(
+            book_id=self.book.id,
+            chapter_number=chapter_number,
+            title=existing.get("title", ""),
+            content=existing.get("content", ""),
+            word_count=existing.get("word_count", 0),
+        )
+
+        if mode not in ("refine", "rewrite"):
+            mode = "refine"
+
+        revised = _rewrite_chapter_impl(
+            client=self.client,
+            genre=self.genre,
+            chapter=original,
+            instruction=instruction,
+            mode=mode,
+        )
+
+        # 覆盖前备份原章
+        self._backup_chapter_file(chapter_number)
+
+        revised.status = ChapterStatus.REVISED
+        self._save_chapter_file(revised)
+        self.repo.save_chapter({
+            "book_id": self.book.id,
+            "chapter_number": revised.chapter_number,
+            "title": revised.title,
+            "content": revised.content,
+            "word_count": revised.word_count,
+            "status": ChapterStatus.REVISED.value,
+            "audit_score": None,
+            "audit_issues": [],
+            "created_at": existing.get("created_at", datetime.now().isoformat()),
+            "updated_at": datetime.now().isoformat(),
+        })
+        return revised
+
     # ---- Internal ----
+
+    def _backup_chapter_file(self, chapter_number: int) -> None:
+        """将指定章节的现有 .md 文件备份为 .bak（覆盖旧备份）."""
+        for vol_dir in sorted(self.chapters_dir.glob("vol*")):
+            ch_file = vol_dir / f"{chapter_number:04d}.md"
+            if ch_file.exists():
+                bak = vol_dir / f"{chapter_number:04d}.md.bak"
+                try:
+                    bak.write_text(ch_file.read_text(encoding="utf-8"), encoding="utf-8")
+                except OSError:
+                    pass
+                return
+        flat = self.chapters_dir / f"{chapter_number:04d}.md"
+        if flat.exists():
+            bak = self.chapters_dir / f"{chapter_number:04d}.md.bak"
+            try:
+                bak.write_text(flat.read_text(encoding="utf-8"), encoding="utf-8")
+            except OSError:
+                pass
 
     def _save_chapter_file(self, chapter: Chapter) -> None:
         """保存章节到 volXX/ 文件夹."""
