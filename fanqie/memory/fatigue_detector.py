@@ -102,21 +102,23 @@ def detect_title_collapse(titles: list[str]) -> dict | None:
 
 
 def detect_mood_monotony(summaries: list[dict]) -> dict | None:
-    if len(summaries) < 5:
+    if len(summaries) < 4:
         return None
     recent = summaries[-5:]
     moods = [s.get("mood", "") for s in recent]
     high_tension = {"紧张", "恐惧", "愤怒", "绝望", "高压", "激烈"}
     streak = 0
+    max_streak = 0
     for m in moods:
         if any(ht in m for ht in high_tension):
             streak += 1
+            max_streak = max(max_streak, streak)
         else:
             streak = 0
-    if streak >= 5:
+    if max_streak >= 4:
         return {
             "type": "mood_monotony",
-            "description": f"连续{streak}章持续高张力，缺乏明显的情绪释放。",
+            "description": f"连续{max_streak}章持续高张力，缺乏明显的情绪释放。",
             "suggestion": "下一章安排一次喘息、温情、幽默或静场释放，再继续加压。",
         }
     return None

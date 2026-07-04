@@ -253,7 +253,7 @@ def _detect_mood(content: str) -> str:
 
 
 def _detect_chapter_type(content: str, genre: GenreProfile) -> str:
-    """检测章节类型."""
+    """检测章节类型（启发式回退）."""
     if not genre.chapter_types:
         return "事件章"
     if any(kw in content for kw in ["高潮", "爆发", "决战", "真相", "揭晓"]):
@@ -264,7 +264,11 @@ def _detect_chapter_type(content: str, genre: GenreProfile) -> str:
         for ct in genre.chapter_types:
             if "过渡" in ct or "日常" in ct:
                 return ct
-    return genre.chapter_types[-2] if len(genre.chapter_types) >= 2 else genre.chapter_types[0]
+    # 默认返回"事件章"类，无则取第一个类型（避免恒定塌缩到倒数第二类）
+    for ct in genre.chapter_types:
+        if "事件" in ct:
+            return ct
+    return genre.chapter_types[0]
 
 
 def _extract_facts_from_chapter(chapter: Chapter) -> list[Fact]:
