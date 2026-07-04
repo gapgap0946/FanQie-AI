@@ -199,6 +199,7 @@ class ChapterMemo(BaseModel):
     is_completion_arc: bool = Field(default=False, description="是否处于完结窗口")
     is_final: bool = Field(default=False, description="是否为最后一章")
     hooks_to_resolve: list[str] = Field(default_factory=list, description="本章需要回收的伏笔ID列表")
+    hooks_to_advance: list[str] = Field(default_factory=list, description="本章需要推进（非回收）的伏笔ID列表")
 
 
 # ---------------------------------------------------------------------------

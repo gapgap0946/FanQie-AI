@@ -224,23 +224,31 @@ def _extract_protagonist_state(content: str) -> str:
 
 def _update_hooks_from_memo(pool: HookPool, memo: ChapterMemo, chapter_number: int) -> None:
     """根据 Chapter Memo 更新伏笔状态."""
-    pay_off_text = memo.pay_off
-    if not pay_off_text:
-        return
+    hook_by_id = {h.hook_id: h for h in pool.hooks}
 
-    for hook in pool.hooks:
-        if hook.hook_id in pay_off_text:
+    # 1. 结构化推进：优先使用 planner 输出的 hooks_to_advance（真实伏笔ID）
+    for hook_id in memo.hooks_to_advance:
+        hook = hook_by_id.get(hook_id)
+        if hook and hook.status not in (HookStatus.RESOLVED, HookStatus.DEFERRED):
             hook.last_advanced_chapter = chapter_number
             hook.advanced_count += 1
+            if hook.status == HookStatus.PLANTED:
+                hook.status = HookStatus.PROGRESSING
 
-    # 如果 memo 指定了要回收的伏笔，标记为 resolved
-    for hook_id in memo.hooks_to_resolve:
+    # 2. 向后兼容：旧数据无 hooks_to_advance 时，回退到 pay_off 文本中的 hook_id 匹配
+    if not memo.hooks_to_advance and memo.pay_off:
         for hook in pool.hooks:
-            if hook.hook_id == hook_id:
-                hook.status = HookStatus.RESOLVED
+            if hook.hook_id in memo.pay_off:
                 hook.last_advanced_chapter = chapter_number
                 hook.advanced_count += 1
-                break
+
+    # 3. memo 指定要回收的伏笔，标记为 resolved
+    for hook_id in memo.hooks_to_resolve:
+        hook = hook_by_id.get(hook_id)
+        if hook:
+            hook.status = HookStatus.RESOLVED
+            hook.last_advanced_chapter = chapter_number
+            hook.advanced_count += 1
 
 
 def _update_completion_progress(

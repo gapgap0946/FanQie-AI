@@ -155,8 +155,9 @@ def build_planner_system_prompt(genre: GenreProfile) -> str:
     return f"""你是一位专业的{genre.name}网文策划编辑。为下一章生成结构化 Chapter Memo。
 题材规则：{genre.pacing_rule}
 爽点类型：{'、'.join(genre.satisfaction_types)}
-输出格式：严格 JSON，包含 goal/reader_waiting_for/pay_off/keep_hidden/transition_duty/key_choice_check/end_changes/must_avoid/style_emphasis
-注意：must_avoid 和 style_emphasis 必须是字符串数组，即使只有一个元素也要用 [] 包裹。"""
+输出格式：严格 JSON，包含 goal/reader_waiting_for/pay_off/keep_hidden/transition_duty/key_choice_check/end_changes/must_avoid/style_emphasis/hooks_to_advance
+注意：must_avoid、style_emphasis 和 hooks_to_advance 必须是字符串数组，即使只有一个元素也要用 [] 包裹。
+hooks_to_advance：从"伏笔账本"中挑选本章要推进的伏笔，填写其伏笔ID（如 ch0003_01、core_01），没有则填 []。"""
 
 
 def build_completion_planner_system_prompt(genre: GenreProfile) -> str:
@@ -177,8 +178,9 @@ def build_completion_planner_system_prompt(genre: GenreProfile) -> str:
 {genre.pacing_rule}
 爽点类型：{'、'.join(genre.satisfaction_types)}
 
-输出格式：严格 JSON，包含 goal/reader_waiting_for/pay_off/keep_hidden/transition_duty/key_choice_check/end_changes/must_avoid/style_emphasis
-注意：must_avoid 和 style_emphasis 必须是字符串数组。"""
+输出格式：严格 JSON，包含 goal/reader_waiting_for/pay_off/keep_hidden/transition_duty/key_choice_check/end_changes/must_avoid/style_emphasis/hooks_to_advance
+注意：must_avoid、style_emphasis 和 hooks_to_advance 必须是字符串数组。
+hooks_to_advance：从"伏笔账本/回收排期"中挑选本章要推进的伏笔ID，没有则填 []。"""
 
 
 def build_final_chapter_planner_system_prompt(genre: GenreProfile) -> str:
@@ -343,6 +345,13 @@ def plan_chapter(
     must_avoid = _ensure_list(parsed.get("must_avoid"))
     style_emphasis = _ensure_list(parsed.get("style_emphasis"))
 
+    # 解析本章要推进的伏笔ID，并用真实伏笔池校验，过滤幻觉ID
+    valid_hook_ids = {h["hook_id"] for h in hooks_raw if h.get("hook_id")}
+    hooks_to_advance = [
+        hid for hid in _ensure_list(parsed.get("hooks_to_advance"))
+        if hid in valid_hook_ids
+    ]
+
     # 收集本章需回收的伏笔
     hooks_to_resolve: list[str] = []
     if completion_plan and in_completion:
@@ -366,6 +375,7 @@ def plan_chapter(
         is_completion_arc=in_completion,
         is_final=is_final,
         hooks_to_resolve=hooks_to_resolve,
+        hooks_to_advance=hooks_to_advance,
     )
     memo.body = _render_memo_body(memo)
     return memo
