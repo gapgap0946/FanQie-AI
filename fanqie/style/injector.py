@@ -45,6 +45,20 @@ def render_style_fingerprint(profile: StyleProfile) -> str:
     if profile.rhetorical_features:
         lines.append(f"- 修辞特征：{'、'.join(profile.rhetorical_features)}")
 
+    # ---- LLM 深度维度 ----
+    if profile.style_summary:
+        lines.append(f"- 文风总述：{profile.style_summary}")
+    if profile.tone:
+        lines.append(f"- 语气基调：{profile.tone}")
+    if profile.narrative_pov:
+        lines.append(f"- 叙事视角：{profile.narrative_pov}")
+    if profile.pacing:
+        lines.append(f"- 叙事节奏：{profile.pacing}")
+    if profile.sentence_habits:
+        lines.append(f"- 句式习惯：{profile.sentence_habits}")
+    if profile.imagery:
+        lines.append(f"- 常用意象：{'、'.join(profile.imagery)}")
+
     lines.append("")
     lines.append("写作时注意：")
     lines.append("- 句子长短交替，避免连续 3 句以上等长")
@@ -53,6 +67,8 @@ def render_style_fingerprint(profile: StyleProfile) -> str:
         lines.append("- 主动避开高频开头模式的机械重复")
     if profile.rhetorical_features:
         lines.append("- 保持与参考文本相近的修辞密度")
+    for tip in profile.writing_tips:
+        lines.append(f"- {tip}")
 
     return "\n".join(lines)
 

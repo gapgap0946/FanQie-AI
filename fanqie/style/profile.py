@@ -8,7 +8,7 @@ from datetime import datetime
 
 @dataclass
 class StyleProfile:
-    """???? ? ?????????????????."""
+    """文风画像 — 统计特征 + LLM 深度理解."""
     avg_sentence_length: float = 0.0
     sentence_length_stddev: float = 0.0
     avg_paragraph_length: int = 0
@@ -16,6 +16,14 @@ class StyleProfile:
     vocabulary_diversity: float = 0.0
     top_patterns: list[str] = field(default_factory=list)
     rhetorical_features: list[str] = field(default_factory=list)
+    # ---- LLM 深度分析维度（可选，无 LLM 时为空）----
+    tone: str = ""                                   # 整体语气/情绪基调
+    narrative_pov: str = ""                          # 叙事人称与视角
+    pacing: str = ""                                 # 节奏感
+    sentence_habits: str = ""                        # 句式偏好与习惯
+    imagery: list[str] = field(default_factory=list) # 常用意象/词汇色彩
+    style_summary: str = ""                          # 一句话文风总述
+    writing_tips: list[str] = field(default_factory=list)  # 可执行的仿写要点
     source_name: str | None = None
     analyzed_at: str = field(default_factory=lambda: datetime.now().isoformat())
 

@@ -657,14 +657,35 @@ def style():
 @style.command("analyze")
 @click.argument("file", type=click.Path(exists=True))
 @click.option("--output", "-o", default=None, help="输出 JSON 路径")
-def style_analyze(file, output):
+@click.option("--llm/--no-llm", default=True, help="是否用 LLM 做深度文风分析（默认开启）")
+def style_analyze(file, output, llm):
     """分析参考文本的文风指纹."""
     with open(file, "r", encoding="utf-8") as f:
         text = f.read()
 
-    profile = analyze_style(text, source_name=os.path.basename(file))
+    client = None
+    if llm:
+        try:
+            from fanqie.llm.client import LLMClient
+            client = LLMClient()
+        except Exception:
+            client = None
+
+    profile = analyze_style(text, source_name=os.path.basename(file), client=client)
 
     console.print(Panel(f"[bold]文风分析结果 — {profile.source_name}[/bold]"))
+    if profile.style_summary:
+        console.print(f"文风总述: {profile.style_summary}")
+    if profile.tone:
+        console.print(f"语气基调: {profile.tone}")
+    if profile.narrative_pov:
+        console.print(f"叙事视角: {profile.narrative_pov}")
+    if profile.pacing:
+        console.print(f"叙事节奏: {profile.pacing}")
+    if profile.sentence_habits:
+        console.print(f"句式习惯: {profile.sentence_habits}")
+    if profile.imagery:
+        console.print(f"常用意象: {'、'.join(profile.imagery)}")
     console.print(f"平均句长: {profile.avg_sentence_length} 字 (标准差 {profile.sentence_length_stddev})")
     console.print(f"平均段长: {profile.avg_paragraph_length} 字 (范围 {profile.paragraph_length_range[0]}-{profile.paragraph_length_range[1]})")
     console.print(f"词汇多样性: {profile.vocabulary_diversity}")

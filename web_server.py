@@ -180,6 +180,10 @@ class FanqieAPI(BaseHTTPRequestHandler):
             self._delete_book(body)
         elif parsed.path == "/api/config":
             self._save_config(body)
+        elif parsed.path == "/api/style/analyze":
+            self._style_analyze(body)
+        elif parsed.path == "/api/style/apply":
+            self._style_apply(body)
         else:
             self._send_json({"error": "not found"}, 404)
 
@@ -566,6 +570,47 @@ class FanqieAPI(BaseHTTPRequestHandler):
             self._send_json({"reply": reply, "timestamp": timestamp})
         except Exception as e:
             self._send_json({"error": f"AI 回复失败: {str(e)}"}, 500)
+
+    def _style_analyze(self, body):
+        text = body.get("text", "").strip()
+        source_name = body.get("source_name", "") or "粘贴文本"
+        if len(text) < 100:
+            self._send_json({"error": "参考文本太短，请至少提供 100 字"}, 400)
+            return
+        try:
+            from fanqie.style.analyzer import analyze_style
+            from fanqie.llm.client import LLMClient
+            client = None
+            try:
+                client = LLMClient()
+            except Exception:
+                client = None
+            profile = analyze_style(text, source_name=source_name, client=client)
+            self._send_json({"profile": profile.to_dict()})
+        except Exception as e:
+            self._send_json({"error": f"分析失败: {str(e)}"}, 500)
+
+    def _style_apply(self, body):
+        book_id = body.get("id", "")
+        profile_data = body.get("profile")
+        if not book_id or not isinstance(profile_data, dict):
+            self._send_json({"error": "缺少书籍或文风数据"}, 400)
+            return
+        book_dir = DATA_DIR / book_id
+        if not book_dir.exists():
+            self._send_json({"error": "书籍不存在"}, 404)
+            return
+        try:
+            from fanqie.style.profile import StyleProfile
+            profile = StyleProfile.from_dict(dict(profile_data))
+            profile_path = book_dir / "style_profile.json"
+            profile_path.write_text(
+                json.dumps(profile.to_dict(), ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            self._send_json({"success": True, "message": f"文风已应用到 {book_id}"})
+        except Exception as e:
+            self._send_json({"error": f"应用失败: {str(e)}"}, 500)
 
     def _create_genre(self, body):
         genre_id = body.get("id", "").strip()

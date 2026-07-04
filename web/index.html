@@ -162,7 +162,7 @@ a { color:var(--accent); text-decoration:none; }
   <aside class="sidebar">
     <div class="sidebar-header"><h1>🍅 Fanqie</h1><p>爽文AI创作引擎</p></div>
     <nav class="sidebar-nav" id="bookList"><div class="loading"><div class="spinner"></div>加载中…</div></nav>
-    <div class="sidebar-footer"><button class="btn btn-primary btn-block btn-sm" onclick="showNewBookModal()">+ 创建新书</button><button class="btn btn-block btn-sm" onclick="showGenreModal()" style="margin-top:6px;">🎭 题材管理</button><button class="btn btn-block btn-sm" onclick="toggleChat()" style="margin-top:6px;">💬 AI 点子王</button><button class="btn btn-block btn-sm" onclick="showLLMConfigModal()" style="margin-top:6px;">⚙️ LLM 配置</button></div>
+    <div class="sidebar-footer"><button class="btn btn-primary btn-block btn-sm" onclick="showNewBookModal()">+ 创建新书</button><button class="btn btn-block btn-sm" onclick="showGenreModal()" style="margin-top:6px;">🎭 题材管理</button><button class="btn btn-block btn-sm" onclick="showStyleModal()" style="margin-top:6px;">🖋️ 文风分析</button><button class="btn btn-block btn-sm" onclick="toggleChat()" style="margin-top:6px;">💬 AI 点子王</button><button class="btn btn-block btn-sm" onclick="showLLMConfigModal()" style="margin-top:6px;">⚙️ LLM 配置</button></div>
   </aside>
   <main class="main" id="mainContent"><div class="empty"><div class="empty-icon">📖</div><p>选择一本书或创建新书开始</p></div></main>
 
@@ -238,6 +238,27 @@ a { color:var(--accent); text-decoration:none; }
       <button class="btn" onclick="hideAdviseModal()">取消</button>
       <button class="btn btn-primary" id="btnAdvise" onclick="doAdvise()">分析并修改</button>
     </div>
+  </div>
+</div>
+
+<!-- Style Modal -->
+<div class="modal-overlay" id="styleModal" role="dialog" aria-modal="true" aria-label="文风分析" style="display:none">
+  <div class="modal" style="max-width:680px;">
+    <h2>🖋️ 文风分析</h2>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">粘贴一段参考小说（≥100 字），AI 会分析其文风，你可以选择应用到任意一本书，让后续写作贴合该笔触。</p>
+    <div class="form-group">
+      <label class="form-label" for="styleSourceName">来源名称（可选）</label>
+      <input class="form-input" id="styleSourceName" name="style-source" autocomplete="off" placeholder="如：某某作者的风格…">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="styleText">参考文本</label>
+      <textarea class="form-textarea" id="styleText" name="style-text" placeholder="粘贴一段参考小说正文…" style="min-height:160px;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="hideStyleModal()">关闭</button>
+      <button class="btn btn-primary" id="btnStyleAnalyze" onclick="doStyleAnalyze()">开始分析</button>
+    </div>
+    <div id="styleResult" style="margin-top:16px;"></div>
   </div>
 </div>
 
@@ -326,6 +347,7 @@ async function loadBooks() {
   try {
     const res = await fetch(API + '/api/books');
     const books = await res.json();
+    window._allBooksCache = books;
     renderBookList(books);
   } catch(e) {
     document.getElementById('bookList').innerHTML = '<div class="loading">连接服务器失败</div>';
@@ -510,6 +532,86 @@ async function doRewrite() {
     }
   } catch(e) { toast('请求失败: ' + e.message, 'error'); }
   btn.disabled = false; btn.textContent = '开始重写';
+}
+
+// ---- Style Analysis ----
+let lastStyleProfile = null;
+function showStyleModal() {
+  lastStyleProfile = null;
+  document.getElementById('styleText').value = '';
+  document.getElementById('styleSourceName').value = '';
+  document.getElementById('styleResult').innerHTML = '';
+  document.getElementById('styleModal').style.display = 'flex';
+}
+function hideStyleModal() { document.getElementById('styleModal').style.display = 'none'; }
+
+async function doStyleAnalyze() {
+  const text = document.getElementById('styleText').value.trim();
+  const sourceName = document.getElementById('styleSourceName').value.trim();
+  if (text.length < 100) { toast('参考文本至少需要 100 字', 'error'); return; }
+  const btn = document.getElementById('btnStyleAnalyze');
+  btn.disabled = true; btn.textContent = '分析中…';
+  document.getElementById('styleResult').innerHTML = '<div class="loading"><div class="spinner"></div>AI 正在分析文风…</div>';
+  try {
+    const res = await fetch(API + '/api/style/analyze', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ text, source_name: sourceName })
+    });
+    const data = await res.json();
+    if (data.profile) {
+      lastStyleProfile = data.profile;
+      renderStyleResult(data.profile);
+    } else {
+      document.getElementById('styleResult').innerHTML = '';
+      toast('分析失败: ' + (data.error||'未知错误'), 'error');
+    }
+  } catch(e) { toast('请求失败: ' + e.message, 'error'); }
+  btn.disabled = false; btn.textContent = '重新分析';
+}
+
+function renderStyleResult(p) {
+  const rows = [];
+  if (p.style_summary) rows.push(['文风总述', p.style_summary]);
+  if (p.tone) rows.push(['语气基调', p.tone]);
+  if (p.narrative_pov) rows.push(['叙事视角', p.narrative_pov]);
+  if (p.pacing) rows.push(['叙事节奏', p.pacing]);
+  if (p.sentence_habits) rows.push(['句式习惯', p.sentence_habits]);
+  if (p.imagery && p.imagery.length) rows.push(['常用意象', p.imagery.join('、')]);
+  rows.push(['平均句长', p.avg_sentence_length + ' 字（标准差 ' + p.sentence_length_stddev + '）']);
+  rows.push(['平均段长', p.avg_paragraph_length + ' 字']);
+  if (p.rhetorical_features && p.rhetorical_features.length) rows.push(['修辞特征', p.rhetorical_features.join('、')]);
+  let tips = '';
+  if (p.writing_tips && p.writing_tips.length) {
+    tips = '<div style="margin-top:10px;"><b>仿写要点</b><ul style="margin:6px 0 0 18px;font-size:13px;">' +
+      p.writing_tips.map(t => '<li>' + escHtml(t) + '</li>').join('') + '</ul></div>';
+  }
+  const table = '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;">' +
+    rows.map(r => '<div style="display:flex;gap:8px;padding:3px 0;"><span style="color:var(--text2);min-width:64px;flex-shrink:0;">' +
+      r[0] + '</span><span>' + escHtml(r[1]) + '</span></div>').join('') + tips + '</div>';
+
+  const books = window._allBooksCache || [];
+  const options = books.map(b => '<option value="' + b.id + '">' + esc(b.title) + '</option>').join('');
+  const applyBox = '<div style="margin-top:14px;display:flex;gap:8px;align-items:flex-end;">' +
+    '<div style="flex:1;"><label class="form-label" for="styleApplyBook">应用到书籍</label>' +
+    '<select class="form-select" id="styleApplyBook">' + (options || '<option value="">暂无书籍</option>') + '</select></div>' +
+    '<button class="btn btn-primary" onclick="doStyleApply()">应用文风</button></div>';
+
+  document.getElementById('styleResult').innerHTML = table + applyBox;
+}
+
+async function doStyleApply() {
+  const bookId = document.getElementById('styleApplyBook').value;
+  if (!bookId) { toast('请选择一本书', 'error'); return; }
+  if (!lastStyleProfile) { toast('请先分析文风', 'error'); return; }
+  try {
+    const res = await fetch(API + '/api/style/apply', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id: bookId, profile: lastStyleProfile })
+    });
+    const data = await res.json();
+    if (data.success) toast('文风已应用，后续写作将贴合该笔触', 'success');
+    else toast('应用失败: ' + (data.error||'未知错误'), 'error');
+  } catch(e) { toast('请求失败: ' + e.message, 'error'); }
 }
 
 // ---- Story ----
