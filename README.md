@@ -1,158 +1,144 @@
 # fanqie — 爽文 AI 智能体
 
-长篇网文创作引擎，专为百万字以上爽文设计。核心借鉴 InkOS 的防幻觉与长期记忆架构，适配国产大模型（OpenAI 兼容协议），SQLite + 本地文件存储。
+> 长篇网文创作引擎，专为百万字以上爽文设计。基于 LLM，具备防幻觉、长期记忆、伏笔管理能力，适配所有 OpenAI 兼容协议的大模型。
 
-## 核心能力
+`fanqie`（番茄）帮你从一句创意开始，自动生成世界观、卷纲，并逐章写出结构完整、前后连贯、爽点密集的长篇小说。支持命令行和网页两种使用方式。
 
-- **防幻觉**：Chapter Memo（7段结构化指令）+ Continuity Auditor（20+维度审查）+ 自动修订
-- **长期记忆**：Protected/Compressible 分层上下文 + 伏笔生命周期管理 + 长跨度疲劳检测
-- **题材模板**：6 个内置题材（玄幻、规则怪谈、全民穿越、克系修仙、末世、诡异降临），支持自定义
-- **文风仿写**：纯文本统计分析（句长/段长/TTR/修辞），无需 LLM，结果注入 system prompt
+---
 
-## 架构
+## ✨ 核心能力
 
-```
-Plan -> Compose -> Write -> Settle -> Audit -> Revise
-  |        |         |        |        |        |
-  |   Chapter Memo    |   状态更新    |   自动修订   |
-  |   (7段结构)      |   伏笔推进    |   (最多N次)  |
-  +-------------------+--------------+--------------+
-```
+- **一句话开书**：输入书名和题材，自动生成世界观基石（Foundation）与分卷大纲。
+- **防幻觉写作**：每章先生成结构化写作指令，写完后经 20+ 维度连贯性审查并自动修订，避免人物/设定崩坏。
+- **长期记忆**：分层上下文 + 伏笔生命周期管理 + 故事圣经，支撑百万字不失忆、不埋坑不填。
+- **反套路机制**：自动检测开头/结尾重复、情绪单调、章节类型固化，主动打破模板化。
+- **6 大内置题材**：玄幻、规则怪谈、全民穿越、克系修仙、末世、诡异降临，也支持自定义。
+- **文风仿写**：分析参考小说的句长、段落、修辞特征，让 AI 贴合你想要的笔触。
+- **两种界面**：命令行（CLI）+ 本地网页管理界面（Web UI）。
 
-### 防幻觉机制
+---
 
-| 阶段 | 机制 | 说明 |
-|------|------|------|
-| 写作前 | Chapter Memo | 每章生成 7 段结构化指令，限定输出范围 |
-| 写作前 | 分层上下文 | Protected（不可压缩）vs Compressible（可压缩） |
-| 写作后 | Continuity Auditor | 20+ 维度审查（OOC、事实一致性、伏笔、节奏等） |
-| 写作后 | 自动修订 | 根据审计结果自动修复，最多 N 次重试 |
-| 全周期 | 伏笔生命周期 | 压力计算、stale/overdue 检测、强制回收 |
-| 全周期 | 疲劳检测 | 开头/结尾模式重复、标题塌缩、情绪单调、章节类型固化 |
+## 🚀 安装
 
-## 安装
+需要 **Python 3.9 或更高版本**。
 
 ```bash
-git clone <repo-url> fanqie
+git clone https://github.com/你的用户名/fanqie.git
 cd fanqie
-pip install -e "."
+pip install -e .
 fanqie --help
 ```
 
-依赖：Python 3.9+，pydantic、click、rich、httpx、pyyaml、tomli。
+依赖会自动安装：`click`、`rich`、`pydantic`、`httpx`、`pyyaml`、`tomli`。
 
-## 快速开始
+---
 
-### 1. 配置 LLM
+## ⚙️ 第一步：配置大模型
 
-```bash
-fanqie config set --base-url https://your-api.com/v1 --api-key sk-xxx --model deepseek-chat
-fanqie config show
-```
-
-支持所有 OpenAI 兼容协议的模型（DeepSeek、Qwen、GLM、mimo 等）。
-
-### 2. 选择题材
+fanqie 的写作、审查全靠大模型驱动，使用前必须先配置。支持所有 OpenAI 兼容 API（DeepSeek、通义千问 Qwen、智谱 GLM 等）。
 
 ```bash
-fanqie genre list          # 查看可用题材
-fanqie genre show xuanhuan # 查看题材详情
-fanqie genre create my_genre --from xuanhuan  # 创建自定义题材
+fanqie config set --base-url https://api.deepseek.com/v1 --api-key sk-你的密钥 --model deepseek-chat
+fanqie config show   # 确认配置
 ```
 
-内置题材：
+> 配置保存在用户目录 `~/.fanqie/config.yaml`，不会进入项目仓库。也可用环境变量 `FANQIE_API_KEY` 提供密钥。
+
+---
+
+## 📖 使用方式一：命令行
+
+### 1. 选择题材
+
+```bash
+fanqie genre list            # 查看所有题材
+fanqie genre show xuanhuan   # 查看某题材详情
+```
 
 | ID | 名称 | 特点 |
 |----|------|------|
-| `xuanhuan` | 玄幻 | 修炼体系+势力对抗+主角逆袭 |
+| `xuanhuan` | 玄幻 | 修炼体系 + 势力对抗 + 主角逆袭 |
 | `rule_horror` | 规则怪谈 | 诡异规则驱动，氛围优先 |
-| `mass_isekai` | 全民穿越求生 | 数值体系+资源争夺 |
-| `cthulhu_cultivation` | 克系修仙 | san值替代道心，诡异替代天劫 |
-| `apocalypse` | 末世 | 生存压力+人性考验 |
+| `mass_isekai` | 全民穿越求生 | 数值体系 + 资源争夺 |
+| `cthulhu_cultivation` | 克系修仙 | san 值替代道心，诡异替代天劫 |
+| `apocalypse` | 末世 | 生存压力 + 人性考验 |
 | `weird_descend` | 诡异降临 | 日常场景异常化，能力觉醒 |
 
-### 3. 创建新书
+### 2. 创建新书
 
 ```bash
 fanqie new "我的第一本爽文" --genre xuanhuan --words 2000 --chapters 500
 ```
 
-参数：
-- `--genre / -g`：题材 ID
-- `--words / -w`：每章目标字数（默认 2000）
-- `--chapters / -c`：目标总章数（默认 500）
+| 选项 | 说明 | 默认 |
+|------|------|------|
+| `--genre / -g` | 题材 ID | `xuanhuan` |
+| `--words / -w` | 每章目标字数 | `2000` |
+| `--chapters / -c` | 目标总章数 | `500` |
+| `--brief / -b` | 创意简报文件（可选） | — |
 
-### 4. 文风仿写（可选）
+命令执行后会输出一个 **book_id**，后续操作都用它。
 
-```bash
-fanqie style analyze 参考小说.txt --output style.json  # 分析文风
-fanqie style import style.json <book_id>               # 导入到书
-fanqie style show <book_id>                            # 查看文风
-fanqie style remove <book_id>                          # 移除文风
-```
-
-文风分析提取：平均句长、段长、词汇多样性（TTR）、高频开头模式、修辞特征密度。
-分析结果注入 Writer 的 system prompt，AI 生成时会主动贴合这些统计特征。
-
-### 5. 开始写作
+### 3. 开始写作
 
 ```bash
-fanqie write <book_id>              # 写一章
-fanqie write <book_id> -n 5         # 连续写 5 章
-fanqie write <book_id> -i "指令"    # 带干预指令
+fanqie write <book_id>            # 写 1 章
+fanqie write <book_id> -n 5       # 连续写 5 章
+fanqie write <book_id> -i "让主角这一章遭遇背叛"   # 带干预指令
 ```
 
-### 6. 查看状态
+### 4. 查看进度 / 完结 / 导出
 
 ```bash
-fanqie status <book_id>
+fanqie status <book_id>                    # 查看章数、伏笔、完结进度
+fanqie complete <book_id>                  # 手动收尾完结
+fanqie export <book_id> -f md -o 我的小说.md # 导出（txt / md）
 ```
 
-### 7. 导出
+### 5. 文风仿写（可选）
 
 ```bash
-fanqie export <book_id>           # 导出为 txt
-fanqie export <book_id> -f md     # 导出为 markdown
-fanqie export <book_id> -o 输出.txt
+fanqie style analyze 参考小说.txt --output style.json  # 分析参考文风
+fanqie style import style.json <book_id>              # 应用到你的书
 ```
 
-## 项目结构
+### 6. 修改设定（人机协作）
 
-```
-fanqie/
-├── models.py                    # Pydantic 数据模型
-├── engine/
-│   ├── orchestrator.py          # 写作主循环
-│   ├── planner.py               # Chapter Memo 生成
-│   ├── composer.py              # 上下文组装
-│   ├── writer.py                # 章节生成（含文风注入）
-│   ├── settler.py               # 章后结算
-│   ├── auditor.py               # Continuity Auditor
-│   ├── reviser.py               # 自动修订
-│   └── intervener.py            # 人工干预
-├── memory/
-│   ├── state_manager.py         # JSON 状态读写
-│   ├── hook_policy.py           # 伏笔策略
-│   ├── hook_lifecycle.py        # 伏笔生命周期
-│   ├── context_assembly.py      # 上下文组装
-│   └── fatigue_detector.py      # 疲劳检测
-├── style/
-│   ├── profile.py               # StyleProfile 模型
-│   ├── analyzer.py              # 文风分析（纯统计）
-│   └── injector.py              # 文风注入
-├── genres/
-│   ├── loader.py                # 模板加载器
-│   ├── builtin/                 # 6 个内置题材
-│   └── custom/                  # 用户自定义题材
-├── llm/client.py                # OpenAI 兼容客户端
-├── storage/                     # SQLite 数据库
-├── cli/main.py                  # Click + Rich CLI
-└── utils/config.py              # 配置管理
+```bash
+fanqie advise <book_id> "把主角的师父改成隐藏反派" --dry-run  # 先分析影响
+fanqie advise <book_id> "把主角的师父改成隐藏反派"           # 执行修改
 ```
 
-## 配置
+---
 
-全局配置存储在 `~/.fanqie/config.yaml`，项目级配置可放在工作目录的 `fanqie.yaml`。
+## 🖥️ 使用方式二：网页界面
+
+```bash
+python web_server.py
+```
+
+启动后在浏览器打开 **http://127.0.0.1:8765**，即可可视化地建书、写章、查看章节与伏笔状态、修改设定、导出成品，还带一个「创意顾问」聊天助手。
+
+---
+
+## 📂 生成的内容存在哪
+
+每本书的数据保存在 `data/<book_id>/` 目录下：
+
+```
+data/<book_id>/
+├── book.db          # SQLite 数据库（结构化数据）
+├── chapters/        # 章节正文（Markdown，按卷分目录）
+└── story/           # 世界观、大纲、伏笔、状态等记忆文件
+```
+
+> `data/` 目录已被 `.gitignore` 忽略，不会上传到仓库。
+
+---
+
+## 🔧 配置项参考
+
+全局配置 `~/.fanqie/config.yaml`（也可在项目目录放 `fanqie.yaml` 覆盖）：
 
 ```yaml
 llm:
@@ -169,42 +155,17 @@ writing:
   core_hooks_count: 5
 ```
 
-环境变量 `FANQIE_API_KEY` 可覆盖 API Key。
+---
 
-## 题材模板格式
+## 🎨 自定义题材
 
-自定义题材放在 `fanqie/genres/custom/` 目录，TOML 格式：
-
-```toml
-[meta]
-name = "我的题材"
-id = "my_genre"
-description = "题材描述"
-
-[craft]
-chapter_types = ["事件章", "过渡章", "高潮章"]
-fatigue_words = ["疲劳词1", "疲劳词2"]
-pacing_rule = "节奏规则描述"
-satisfaction_types = ["打脸", "升级", "真相揭示"]
-
-[craft.rules]
-atmosphere = "氛围规则"
-pacing = "节奏规则"
-character = "角色规则"
-language = "语言规则"
-
-[prohibitions]
-items = ["禁止项1", "禁止项2"]
-
-[audit]
-dimensions = [1, 2, 3, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26]
+```bash
+fanqie genre create my_genre --from xuanhuan
 ```
 
-## 路线图
+会在 `fanqie/genres/custom/` 生成一份 TOML 模板供你编辑，包含题材名称、章节类型、爽点类型、节奏规则、审查维度等字段。
 
-- **V1**（当前）：核心引擎 + CLI
-- **V2**（计划中）：React Web 界面，可视化写作仪表盘
-- **V3**（计划中）：多书并行、协作写作、章节分支管理
+---
 
 ## License
 
