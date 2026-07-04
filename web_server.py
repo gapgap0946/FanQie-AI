@@ -176,6 +176,8 @@ class FanqieAPI(BaseHTTPRequestHandler):
             self._audit_chapter(body)
         elif parsed.path == "/api/delete":
             self._delete_book(body)
+        elif parsed.path == "/api/config":
+            self._save_config(body)
         else:
             self._send_json({"error": "not found"}, 404)
 
@@ -318,6 +320,27 @@ class FanqieAPI(BaseHTTPRequestHandler):
                              "has_key": bool(llm.get("api_key", "")),
                              "temperature": llm.get("temperature", 0.7),
                              "max_tokens": llm.get("max_tokens", 4096)})
+        except Exception as e:
+            self._send_json({"error": str(e)}, 500)
+
+    def _save_config(self, body):
+        try:
+            from fanqie.utils.config import load_config, save_global_config
+            cfg = load_config()
+            llm = cfg.setdefault("llm", {})
+            if "base_url" in body:
+                llm["base_url"] = body.get("base_url", "")
+            if "model" in body:
+                llm["model"] = body.get("model", "")
+            if "temperature" in body:
+                llm["temperature"] = body.get("temperature", 0.7)
+            if "max_tokens" in body:
+                llm["max_tokens"] = body.get("max_tokens", 4096)
+            # api_key 仅在前端传入非空时才更新，避免覆盖已有 key
+            if body.get("api_key"):
+                llm["api_key"] = body["api_key"]
+            save_global_config(cfg)
+            self._send_json({"success": True})
         except Exception as e:
             self._send_json({"error": str(e)}, 500)
 
