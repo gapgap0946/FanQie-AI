@@ -253,7 +253,14 @@ a { color:var(--accent); text-decoration:none; }
       </select>
     </div>
     <div class="form-group"><label class="form-label" for="rewriteInstruction">你的意见（哪里不满意、想怎么改）</label><textarea class="form-textarea" id="rewriteInstruction" name="rewrite-instruction" placeholder="如：开头太拖沓，直接从打斗写起；主角性格要更狠一点…"></textarea></div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">原章会自动备份为 .bak 文件，可手动回滚。</p>
+    <div class="form-group">
+      <label class="form-label" for="rewriteTruncate">后续章节处理</label>
+      <select class="form-select" id="rewriteTruncate" name="rewrite-truncate">
+        <option value="0">保留后续章节 — 仅重算本章记忆（后续章可能与本章矛盾）</option>
+        <option value="1">删除后续章节 — 本章之后推倒重来，记忆回滚到本章（更干净）</option>
+      </select>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">原章会自动备份为 .bak；删除的后续章会备份为 .deleted，可手动回滚。</p>
     <div class="modal-actions">
       <button class="btn" onclick="hideRewriteModal()">取消</button>
       <button class="btn btn-primary" id="btnRewrite" onclick="doRewrite()">开始重写</button>
@@ -472,6 +479,7 @@ function showRewriteModal(num) {
   document.getElementById('rewriteChapterNum').textContent = num;
   document.getElementById('rewriteInstruction').value = '';
   document.getElementById('rewriteMode').value = 'refine';
+  document.getElementById('rewriteTruncate').value = '0';
   document.getElementById('rewriteModal').style.display = 'flex';
   document.getElementById('rewriteInstruction').focus();
 }
@@ -481,7 +489,9 @@ async function doRewrite() {
   if (!rewriteTargetChapter) return;
   const num = rewriteTargetChapter;
   const mode = document.getElementById('rewriteMode').value;
+  const truncate = document.getElementById('rewriteTruncate').value === '1';
   const instruction = document.getElementById('rewriteInstruction').value.trim();
+  if (truncate && !confirm('确定删除第' + num + '章之后的所有章节吗？（会备份为 .deleted，可手动回滚）')) return;
   const btn = document.getElementById('btnRewrite');
   btn.disabled = true; btn.textContent = '提交中…';
   hideRewriteModal();
@@ -489,7 +499,7 @@ async function doRewrite() {
   try {
     const res = await fetch(API + '/api/rewrite', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ id: currentBookId, chapter_number: num, mode, instruction })
+      body: JSON.stringify({ id: currentBookId, chapter_number: num, mode, instruction, truncate })
     });
     const data = await res.json();
     if (data.task_id) {

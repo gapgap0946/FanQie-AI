@@ -32,7 +32,7 @@ from .planner import (
 )
 from .composer import compose_context
 from .writer import write_chapter
-from .settler import settle_chapter, finalize_book
+from .settler import settle_chapter, finalize_book, resettle_chapter
 from .auditor import audit_and_revise
 from .reviser import rewrite_chapter as _rewrite_chapter_impl
 from .intervener import Intervention, render_intervention_prompt
@@ -519,10 +519,14 @@ class Orchestrator:
 
         return status
 
-    def rewrite_chapter(self, chapter_number: int, instruction: str = "", mode: str = "refine") -> Chapter:
-        """按用户意见重写指定章节.
+    def rewrite_chapter(self, chapter_number: int, instruction: str = "",
+                        mode: str = "refine", truncate_after: bool = False) -> Chapter:
+        """按用户意见重写指定章节，并同步记忆.
 
         mode="refine" 微调 / "rewrite" 大幅重写。覆盖前会将原章备份为 .bak。
+        truncate_after=True：删除本章之后的所有章节（备份），并把记忆回滚到本章，
+            适合"改了这一章、后续推倒重来"的场景；
+        truncate_after=False：保留后续章，仅重算本章记忆（摘要/事实/当前状态）。
         """
         existing = self.repo.get_chapter(chapter_number)
         if existing is None:
@@ -564,9 +568,42 @@ class Orchestrator:
             "created_at": existing.get("created_at", datetime.now().isoformat()),
             "updated_at": datetime.now().isoformat(),
         })
+
+        # ---- 记忆同步 ----
+        if truncate_after:
+            # 删除后续章节（文件备份 + 数据库删除），并把记忆回滚到本章
+            self._delete_chapters_after_files(chapter_number)
+            self.repo.delete_chapters_after(chapter_number)
+            self.state_mgr.truncate_memory_after(chapter_number)
+
+        # 无论哪种模式，都根据新正文重算本章记忆
+        try:
+            resettle_chapter(
+                client=self.client,
+                genre=self.genre,
+                state_mgr=self.state_mgr,
+                chapter=revised,
+            )
+        except Exception:
+            pass
+
         return revised
 
     # ---- Internal ----
+
+    def _delete_chapters_after_files(self, chapter_number: int) -> None:
+        """删除章节号 > chapter_number 的所有章节 .md 文件（重命名为 .deleted 作软备份）."""
+        for vol_dir in sorted(self.chapters_dir.glob("vol*")):
+            for ch_file in vol_dir.glob("*.md"):
+                stem = ch_file.stem
+                if stem.isdigit() and int(stem) > chapter_number:
+                    try:
+                        bak = ch_file.with_suffix(".md.deleted")
+                        if bak.exists():
+                            bak.unlink()
+                        ch_file.rename(bak)
+                    except OSError:
+                        pass
 
     def _backup_chapter_file(self, chapter_number: int) -> None:
         """将指定章节的现有 .md 文件备份为 .bak（覆盖旧备份）."""

@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fanqie.models import CurrentState, HookPool, ChapterSummary, Fact, Hook
+from fanqie.models import CurrentState, HookPool, ChapterSummary, Fact, Hook, HookStatus
 
 
 class StateManager:
@@ -161,6 +161,44 @@ class StateManager:
         path = self.runtime_dir / "chapter_summaries.md"
         with open(path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
+
+    # ---- Memory Rollback ----
+
+    def truncate_memory_after(self, keep_until_chapter: int) -> None:
+        """将记忆回滚到"第 keep_until_chapter 章刚写完"的状态.
+
+        - 删除章节号 > keep_until_chapter 的章节摘要；
+        - 回滚伏笔：删除起始章 > keep_until_chapter 的伏笔；
+          对 last_advanced_chapter > keep_until_chapter 的伏笔，把推进/回收状态回退；
+        - 删除来源章 > keep_until_chapter 的事实，并把 chapter_number 归位。
+        """
+        # 1) 章节摘要
+        summaries = [s for s in self.load_summaries() if s.chapter <= keep_until_chapter]
+        self.save_summaries(summaries)
+
+        # 2) 伏笔池
+        pool = self.load_hook_pool()
+        kept_hooks = []
+        for h in pool.hooks:
+            if h.start_chapter > keep_until_chapter:
+                continue  # 该伏笔是后续章才埋下的，整条删除
+            if h.last_advanced_chapter > keep_until_chapter:
+                # 推进/回收发生在被截断的区间，回退状态
+                h.last_advanced_chapter = h.start_chapter
+                h.advanced_count = 0
+                if h.status in (HookStatus.RESOLVED, HookStatus.PROGRESSING,
+                                HookStatus.PRESSURED, HookStatus.NEAR_PAYOFF):
+                    h.status = HookStatus.PLANTED
+            kept_hooks.append(h)
+        pool.hooks = kept_hooks
+        self.save_hook_pool(pool)
+
+        # 3) 当前状态：删除来源章超出范围的事实，章号归位
+        state = self.load_current_state()
+        state.facts = [f for f in state.facts if f.source_chapter <= keep_until_chapter]
+        if state.chapter_number > keep_until_chapter:
+            state.chapter_number = keep_until_chapter
+        self.save_current_state(state)
 
     # ---- Story Files ----
 

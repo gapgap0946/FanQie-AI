@@ -515,7 +515,9 @@ def audit(book_id, chapter_number, retry):
 @click.option("--instruction", "-i", default="", help="重写意见（你对这一章的不满与要求）")
 @click.option("--mode", "-m", type=click.Choice(["refine", "rewrite"]), default="refine",
               help="refine=按意见微调（默认）；rewrite=按意见大幅重写")
-def rewrite(book_id, chapter_number, instruction, mode):
+@click.option("--truncate", "-t", is_flag=True, default=False,
+              help="删除本章之后的所有章节并回滚记忆（后续推倒重来）")
+def rewrite(book_id, chapter_number, instruction, mode, truncate):
     """按你的意见重写指定章节（覆盖前自动备份为 .bak）."""
     orch = _load_orchestrator(book_id)
     if orch is None:
@@ -525,10 +527,14 @@ def rewrite(book_id, chapter_number, instruction, mode):
     console.print(f"[cyan]正在{mode_label}第{chapter_number}章...[/cyan]")
     if instruction:
         console.print(f"[dim]意见：{instruction}[/dim]")
+    if truncate:
+        console.print(f"[yellow]将删除第{chapter_number}章之后的所有章节并回滚记忆[/yellow]")
 
     try:
         with console.status(f"AI 正在{mode_label}..."):
-            revised = orch.rewrite_chapter(chapter_number, instruction=instruction, mode=mode)
+            revised = orch.rewrite_chapter(
+                chapter_number, instruction=instruction, mode=mode, truncate_after=truncate,
+            )
     except ValueError as e:
         console.print(f"[red]{e}[/red]")
         return
@@ -540,6 +546,8 @@ def rewrite(book_id, chapter_number, instruction, mode):
     console.print(f"  标题：{revised.title}")
     console.print(f"  字数：{revised.word_count}")
     console.print(f"[dim]原章已备份为 {chapter_number:04d}.md.bak[/dim]")
+    if truncate:
+        console.print(f"[dim]第{chapter_number}章之后的章节已移除，记忆已回滚[/dim]")
 
 
 # ============================================================

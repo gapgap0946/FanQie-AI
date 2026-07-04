@@ -425,6 +425,7 @@ class FanqieAPI(BaseHTTPRequestHandler):
         chapter_number = body.get("chapter_number", 0)
         instruction = body.get("instruction", "")
         mode = body.get("mode", "refine")
+        truncate = bool(body.get("truncate", False))
         if mode not in ("refine", "rewrite"):
             mode = "refine"
         if not book_id or not chapter_number:
@@ -433,6 +434,8 @@ class FanqieAPI(BaseHTTPRequestHandler):
         cmd = [sys.executable, "-m", "fanqie.cli.main", "rewrite", book_id, str(chapter_number), "-m", mode]
         if instruction:
             cmd.extend(["-i", instruction])
+        if truncate:
+            cmd.append("-t")
         label = ("微调" if mode == "refine" else "重写") + f"第{chapter_number}章"
         task_id = _start_task(cmd, str(FANQIE_DIR), label, timeout=600)
         self._send_json({"task_id": task_id, "status": "pending"})

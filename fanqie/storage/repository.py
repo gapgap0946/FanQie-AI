@@ -94,6 +94,20 @@ class Repository:
         )
         return row["cnt"] if row else 0
 
+    def delete_chapters_after(self, chapter_number: int) -> int:
+        """删除章节号 > chapter_number 的所有章节记录，返回删除数量."""
+        row = self.db.fetchone(
+            "SELECT COUNT(*) as cnt FROM chapters WHERE book_id=? AND chapter_number>?",
+            (self.book_id, chapter_number),
+        )
+        count = row["cnt"] if row else 0
+        self.db.execute(
+            "DELETE FROM chapters WHERE book_id=? AND chapter_number>?",
+            (self.book_id, chapter_number),
+        )
+        self.db.commit()
+        return count
+
     # ---- Hook ----
 
     def save_hook(self, hook: dict) -> None:

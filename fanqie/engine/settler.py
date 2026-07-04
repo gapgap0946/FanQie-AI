@@ -97,6 +97,64 @@ def settle_chapter(
         _save_completion_plan(state_mgr, completion_plan)
 
 
+def resettle_chapter(
+    client: LLMClient,
+    genre: GenreProfile,
+    state_mgr: StateManager,
+    chapter: Chapter,
+) -> None:
+    """重写章节后，仅根据新正文重算该章的记忆（摘要 + 事实 + 当前状态）.
+
+    与 settle_chapter 不同：不依赖 ChapterMemo，不做伏笔的 memo 推进/回收，
+    只从新正文重新抽取摘要与事实，覆盖该章旧摘要、剔除该章旧事实后写入新事实。
+    伏笔状态的重算由上层的记忆回滚（truncate_memory_after）负责。
+    """
+    structured = _generate_structured_summary(client, genre, chapter, None)
+
+    if structured:
+        characters = "、".join(structured.get("characters", [])[:8]) or _extract_characters(chapter.content)
+        events = structured.get("events") or _summarize_events(chapter.content)
+        mood = structured.get("mood") or _detect_mood(chapter.content)
+        chapter_type = structured.get("chapter_type") or _detect_chapter_type(chapter.content, genre)
+        conflict = structured.get("conflict") or _extract_conflict(chapter.content)
+        protagonist_state = structured.get("protagonist_state") or _extract_protagonist_state(chapter.content)
+    else:
+        characters = _extract_characters(chapter.content)
+        events = _summarize_events(chapter.content)
+        mood = _detect_mood(chapter.content)
+        chapter_type = _detect_chapter_type(chapter.content, genre)
+        conflict = _extract_conflict(chapter.content)
+        protagonist_state = _extract_protagonist_state(chapter.content)
+
+    # 1. 覆盖该章摘要
+    summary = ChapterSummary(
+        chapter=chapter.chapter_number,
+        title=chapter.title,
+        characters=characters,
+        events=events,
+        state_changes="",
+        hook_activity="",
+        mood=mood,
+        chapter_type=chapter_type,
+    )
+    summaries = state_mgr.load_summaries()
+    summaries = [s for s in summaries if s.chapter != chapter.chapter_number]
+    summaries.append(summary)
+    summaries.sort(key=lambda s: s.chapter)
+    state_mgr.save_summaries(summaries)
+
+    # 2. 若该章是最新章，更新当前状态；剔除该章旧事实后写入新事实
+    current_state = state_mgr.load_current_state()
+    current_state.facts = [f for f in current_state.facts if f.source_chapter != chapter.chapter_number]
+    for fact in _build_facts(structured, chapter):
+        current_state.facts.append(fact)
+    if chapter.chapter_number >= current_state.chapter_number:
+        current_state.chapter_number = chapter.chapter_number
+        current_state.current_conflict = conflict
+        current_state.protagonist_state = protagonist_state
+    state_mgr.save_current_state(current_state)
+
+
 def finalize_book(
     client: LLMClient,
     genre: GenreProfile,
