@@ -9,6 +9,7 @@ from fanqie.models import (
 from fanqie.genres.loader import GenreProfile
 from fanqie.memory.state_manager import StateManager
 from fanqie.memory.hook_lifecycle import get_hook_ledger_summary, compute_recyclable_hooks
+from fanqie.memory.fatigue_detector import run_fatigue_checks
 
 
 def _ensure_list(value) -> list[str]:
@@ -150,6 +151,45 @@ def validate_completion_feasibility(
 
 
 # ---- Prompt Builders ----
+
+def build_anti_monotony_hint(state_mgr: StateManager, chapter_number: int) -> str:
+    """基于最近章节摘要构建反单调约束，从生成端主动去重.
+
+    读取最近若干章的 mood/chapter_type 与事件，运行疲劳检测，
+    把"需要避免的开篇/情绪/章节功能"作为约束注入 planner prompt。
+    """
+    summaries = state_mgr.load_summaries()
+    prev = [s for s in summaries if s.chapter < chapter_number]
+    if len(prev) < 3:
+        return ""
+
+    prev.sort(key=lambda s: s.chapter)
+    summary_dicts = [
+        {"mood": s.mood, "chapter_type": s.chapter_type}
+        for s in prev
+    ]
+    titles = [s.title for s in prev]
+    # 用事件文本近似"章节正文"用于开头/结尾模式检测
+    chapter_texts = [s.events for s in prev if s.events]
+
+    issues = run_fatigue_checks(chapter_texts, summary_dicts, titles)
+
+    recent = prev[-5:]
+    recent_moods = "、".join(dict.fromkeys(s.mood for s in recent if s.mood))
+    recent_types = "、".join(dict.fromkeys(s.chapter_type for s in recent if s.chapter_type))
+
+    lines = ["## 反单调约束（避免与近期章节雷同）"]
+    if recent_moods:
+        lines.append(f"- 最近几章情绪基调：{recent_moods}。若已连续多章同调，本章切换情绪节奏。")
+    if recent_types:
+        lines.append(f"- 最近几章章节类型：{recent_types}。本章尽量切换章节功能，避免重复同一布局。")
+    for issue in issues:
+        lines.append(f"- ⚠️ {issue['description']} 建议：{issue['suggestion']}")
+
+    if len(lines) == 1:
+        return ""
+    return "\n".join(lines) + "\n"
+
 
 def build_planner_system_prompt(genre: GenreProfile) -> str:
     return f"""你是一位专业的{genre.name}网文策划编辑。为下一章生成结构化 Chapter Memo。
@@ -322,6 +362,8 @@ def plan_chapter(
     if user_intervention:
         intervention_text = f"## 用户干预指令\n{user_intervention}\n"
 
+    anti_monotony_text = build_anti_monotony_hint(state_mgr, chapter_number)
+
     user_prompt = (
         f"请为第{chapter_number}章生成 Chapter Memo。\n"
         f"## 当前状态\n{current_state[:2000]}\n"
@@ -330,6 +372,7 @@ def plan_chapter(
         f"## 当前关注点\n{current_focus[:1000]}\n"
         f"## 伏笔账本\n{hook_ledger}\n"
         f"{recyclable_text}"
+        f"{anti_monotony_text}"
         f"{completion_context}"
         f"{intervention_text}"
         f"请输出 JSON 格式。"
