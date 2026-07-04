@@ -193,18 +193,21 @@ class FanqieAPI(BaseHTTPRequestHandler):
                     try:
                         from fanqie.storage.repository import Repository
                         repo = Repository(str(DATA_DIR), d.name)
-                        book = repo.get_book()
-                        if book:
-                            ch_count = repo.get_chapter_count()
-                            books.append({
-                                "id": book["id"],
-                                "title": book["title"],
-                                "genre_id": book.get("genre_id", ""),
-                                "status": book.get("status", "draft"),
-                                "chapters": ch_count,
-                                "target_chapters": book.get("target_chapters", 500),
-                                "updated_at": book.get("updated_at", ""),
-                            })
+                        try:
+                            book = repo.get_book()
+                            if book:
+                                ch_count = repo.get_chapter_count()
+                                books.append({
+                                    "id": book["id"],
+                                    "title": book["title"],
+                                    "genre_id": book.get("genre_id", ""),
+                                    "status": book.get("status", "draft"),
+                                    "chapters": ch_count,
+                                    "target_chapters": book.get("target_chapters", 500),
+                                    "updated_at": book.get("updated_at", ""),
+                                })
+                        finally:
+                            repo.close()
                     except Exception:
                         pass
         self._send_json(books)
@@ -217,27 +220,30 @@ class FanqieAPI(BaseHTTPRequestHandler):
             from fanqie.storage.repository import Repository
             from fanqie.memory.state_manager import StateManager
             repo = Repository(str(DATA_DIR), book_id)
-            book = repo.get_book()
-            if not book:
-                self._send_json({"error": "book not found"}, 404)
-                return
-            state_mgr = StateManager(str(DATA_DIR / book_id))
-            hook_pool = state_mgr.load_hook_pool()
-            active_hooks = len([h for h in hook_pool.hooks if h.status.value not in ("resolved", "deferred")])
-            current_state = state_mgr.load_current_state()
-            self._send_json({
-                "id": book["id"], "title": book["title"],
-                "genre_id": book.get("genre_id", ""),
-                "status": book.get("status", "draft"),
-                "chapters": repo.get_chapter_count(),
-                "target_chapters": book.get("target_chapters", 500),
-                "chapter_word_count": book.get("chapter_word_count", 2000),
-                "active_hooks": active_hooks,
-                "total_hooks": len(hook_pool.hooks),
-                "current_conflict": current_state.current_conflict,
-                "current_location": current_state.current_location,
-                "updated_at": book.get("updated_at", ""),
-            })
+            try:
+                book = repo.get_book()
+                if not book:
+                    self._send_json({"error": "book not found"}, 404)
+                    return
+                state_mgr = StateManager(str(DATA_DIR / book_id))
+                hook_pool = state_mgr.load_hook_pool()
+                active_hooks = len([h for h in hook_pool.hooks if h.status.value not in ("resolved", "deferred")])
+                current_state = state_mgr.load_current_state()
+                self._send_json({
+                    "id": book["id"], "title": book["title"],
+                    "genre_id": book.get("genre_id", ""),
+                    "status": book.get("status", "draft"),
+                    "chapters": repo.get_chapter_count(),
+                    "target_chapters": book.get("target_chapters", 500),
+                    "chapter_word_count": book.get("chapter_word_count", 2000),
+                    "active_hooks": active_hooks,
+                    "total_hooks": len(hook_pool.hooks),
+                    "current_conflict": current_state.current_conflict,
+                    "current_location": current_state.current_location,
+                    "updated_at": book.get("updated_at", ""),
+                })
+            finally:
+                repo.close()
         except Exception as e:
             self._send_json({"error": str(e)}, 500)
 
@@ -248,15 +254,18 @@ class FanqieAPI(BaseHTTPRequestHandler):
         try:
             from fanqie.storage.repository import Repository
             repo = Repository(str(DATA_DIR), book_id)
-            chapters = repo.get_all_chapters()
-            result = [{
-                "chapter_number": ch["chapter_number"],
-                "title": ch.get("title", ""),
-                "word_count": ch.get("word_count", 0),
-                "status": ch.get("status", "draft"),
-                "audit_score": ch.get("audit_score"),
-            } for ch in chapters]
-            self._send_json(result)
+            try:
+                chapters = repo.get_all_chapters()
+                result = [{
+                    "chapter_number": ch["chapter_number"],
+                    "title": ch.get("title", ""),
+                    "word_count": ch.get("word_count", 0),
+                    "status": ch.get("status", "draft"),
+                    "audit_score": ch.get("audit_score"),
+                } for ch in chapters]
+                self._send_json(result)
+            finally:
+                repo.close()
         except Exception as e:
             self._send_json({"error": str(e)}, 500)
 
@@ -445,15 +454,28 @@ class FanqieAPI(BaseHTTPRequestHandler):
             self._send_json({"error": "missing id"}, 400)
             return
         import shutil
+        import gc
+        import time
         book_dir = DATA_DIR / book_id
         if not book_dir.exists():
             self._send_json({"error": "书籍不存在"}, 404)
             return
-        try:
-            shutil.rmtree(book_dir)
-            self._send_json({"success": True, "message": f"已删除 {book_id}"})
-        except Exception as e:
-            self._send_json({"error": str(e)}, 500)
+        # 关闭可能残留的 SQLite 连接，释放 Windows 文件句柄
+        gc.collect()
+        last_err = None
+        for attempt in range(3):
+            try:
+                shutil.rmtree(book_dir)
+                self._send_json({"success": True, "message": f"已删除 {book_id}"})
+                return
+            except PermissionError as e:
+                last_err = e
+                gc.collect()
+                time.sleep(0.3)
+            except Exception as e:
+                self._send_json({"error": str(e)}, 500)
+                return
+        self._send_json({"error": f"文件被占用，删除失败：{last_err}"}, 500)
 
     def _get_genre_detail(self, genre_id):
         if not genre_id:

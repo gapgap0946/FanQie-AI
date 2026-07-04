@@ -19,6 +19,16 @@ class Repository:
         self.db = Database(get_db_path(data_dir, book_id))
         run_migrations(self.db)
 
+    def close(self) -> None:
+        """关闭底层数据库连接，释放文件句柄."""
+        self.db.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
     # ---- Book ----
 
     def save_book(self, book: dict) -> None:
