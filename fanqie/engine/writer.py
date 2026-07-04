@@ -254,18 +254,21 @@ def write_chapter(
     )
     user_prompt = build_writer_user_prompt(memo, context_pkg, chapter_number, prev_title)
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt},
-    ]
-
     # 字数范围
     min_words = int(chapter_word_count * 0.8)
     max_words = int(chapter_word_count * 1.2)
     max_tokens = int(chapter_word_count * 2.5)
 
     max_retries = 3
+    title, body, word_count = "", "", 0
+    correction = ""
     for attempt in range(max_retries):
+        # 重试时在原始 user_prompt 后追加字数纠正指令，而非累积上一版整章正文，
+        # 避免 prompt 随重试线性膨胀导致 token 成本飙升。
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt + correction},
+        ]
         result = client.chat(messages, temperature=0.8, max_tokens=max_tokens)
 
         content = result["content"]
@@ -279,18 +282,16 @@ def write_chapter(
         if attempt < max_retries - 1:
             if word_count < min_words:
                 correction = (
-                    f"\n\n[系统指令] 上一版只有 {word_count} 字，远低于目标 {chapter_word_count} 字。"
-                    f"请扩充到 {chapter_word_count} 字左右（{min_words}-{max_words} 字），"
-                    f"增加细节描写、对话、心理活动或环境描写，保持原有情节不变。"
+                    f"\n\n[系统指令] 请严格控制字数：目标 {chapter_word_count} 字"
+                    f"（允许 {min_words}-{max_words} 字）。上一次生成偏少，"
+                    f"请通过增加细节描写、对话、心理活动或环境描写写足字数，情节保持完整。"
                 )
             else:
                 correction = (
-                    f"\n\n[系统指令] 上一版有 {word_count} 字，超出目标 {chapter_word_count} 字。"
-                    f"请精简到 {chapter_word_count} 字左右（{min_words}-{max_words} 字），"
-                    f"删减冗余描写和重复内容，保留核心情节和爽点。"
+                    f"\n\n[系统指令] 请严格控制字数：目标 {chapter_word_count} 字"
+                    f"（允许 {min_words}-{max_words} 字）。上一次生成偏多，"
+                    f"请精炼表达、删减冗余描写和重复内容，保留核心情节和爽点。"
                 )
-            messages.append({"role": "assistant", "content": content})
-            messages.append({"role": "user", "content": correction})
 
     return Chapter(
         book_id=memo.book_id,
