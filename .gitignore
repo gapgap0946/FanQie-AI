@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+data/
+fanqie/genres/custom/*
+!fanqie/genres/custom/.gitkeep
+inkos-ref/
+
+# 自动生成的环境配置
+.codex/
+
+# 个人创作草稿/临时笔记
+1.txt
+
+# 含真实 API Key 的项目级配置
+fanqie.yaml

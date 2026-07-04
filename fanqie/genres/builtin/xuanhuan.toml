@@ -1,0 +1,69 @@
+[meta]
+name = "玄幻"
+id = "xuanhuan"
+description = "东方玄幻，修炼体系+势力对抗+主角逆袭"
+
+[craft]
+chapter_types = ["修炼章", "战斗章", "探索章", "过渡章", "高潮章"]
+fatigue_words = ["倒吸一口凉气", "瞳孔一缩", "恐怖如斯", "难以置信", "竟然", "居然", "此子", "不可留", "蝼蚁", "找死"]
+numerical_system = true
+power_scaling = true
+era_research = false
+pacing_rule = "修炼→冲突→打脸→升级→新地图→更强敌人，循环推进"
+satisfaction_types = ["打脸", "突破", "获得机缘", "反杀", "身份揭露", "势力碾压"]
+
+[craft.rules]
+atmosphere = "主角必须有明确的成长线和复仇/崛起动机。前30章建立核心冲突。"
+pacing = "每5章一个爽点（打脸/突破），每20章一个大高潮（势力对抗/关键战斗）。"
+character = "反派要有智商和动机，不能纯工具人。女角色要有独立人格。"
+language = "战斗描写要有层次感。修炼体系要前后一致。对话要体现角色性格。"
+
+[craft.style_defaults]
+avg_sentence_length = 20
+avg_paragraph_length = 65
+
+[craft.world_modules]
+required = ["power_system", "geography", "history", "drive", "factions", "resources"]
+
+[craft.world_modules.emphasis]
+power_system = "重点设计等级划分、突破条件、战力天花板"
+drive = "世界前进的核心动力：为什么所有角色都在行动？"
+resources = "资源的稀缺性、分配机制、垄断与打破垄断"
+
+[craft.protagonist]
+identity_hint = "常见起点：废材/被退婚/家族弃子/穿越者，隐藏身世为关键悬念"
+motivation_hint = "近期：生存/复仇 → 中期：变强/建立势力 → 长期：登顶/改变世界"
+arc_hint = "从被动到主动，从自私到担当，每卷一个性格蜕变节点"
+
+[craft.civilization_norms]
+count = 5
+prompt_hint = "从世界观推导该世界中人们不言自明的基本认知：弱肉强食、实力为尊、资源至上"
+
+[prohibitions]
+items = ["主角无脑开挂", "反派降智", "修炼体系前后矛盾", "所有女性角色爱上主角", "地图无限扩张无节制", "战斗描写千篇一律"]
+
+[craft.golden_three]
+chapter_1_structure = "事件→背景→发展→钩子"
+chapter_1_rules = [
+    "前300字必须有强冲突（死亡/背叛/危机），拒绝流水账",
+    "500字内主角亮相，用动作/台词立人设",
+    "世界观用10-20字极简点出，不堆设定",
+    "章末必须有'下一章会怎样'的强烈钩子",
+]
+chapter_2_structure = "信息→发展→钩子"
+chapter_2_rules = [
+    "金手指必须在第2章亮相，用戏剧性场景展示",
+    "金手指首次使用有明显效果，规则简单清晰",
+    "补充人物关系和世界观细节，但通过剧情展示而非叙述",
+    "冲突升级：叠加人际/资源/认知三重压力",
+]
+chapter_3_structure = "阻碍→升级→期待感"
+chapter_3_rules = [
+    "必须有至少1个爽点（打脸/收获/反转）",
+    "每800字设一个情绪爆点",
+    "章末设置信息差/危机预告/选择困境钩子",
+    "让读者产生'必须读第四章'的冲动",
+]
+
+[audit]
+dimensions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26]

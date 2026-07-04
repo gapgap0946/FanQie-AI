@@ -1,0 +1,70 @@
+[meta]
+name = "规则怪谈"
+id = "rule_horror"
+description = "以诡异规则为核心驱动力的恐怖悬疑题材"
+
+[craft]
+chapter_types = ["氛围章", "事件章", "揭示章", "过渡章", "回收章"]
+fatigue_words = ["毛骨悚然", "不寒而栗", "浑身发冷", "头皮发麻", "鸡皮疙瘩", "心跳加速", "仿佛", "不禁", "宛如", "竟然"]
+numerical_system = false
+power_scaling = false
+era_research = false
+pacing_rule = "氛围递进：安全感→微妙不适→确认异常→恐惧升级→高潮→喘息，循环推进"
+satisfaction_types = ["真相揭示", "成功逃脱", "反杀怪物", "谜团解开", "规则发现"]
+
+[craft.rules]
+atmosphere = "氛围是第一生产力。用五感细节建立不安。恐怖来自对未知的恐惧，信息揭示要克制。"
+pacing = "每5章必须打破一次已建立的模式（规则矛盾、可信来源说谎、安全区失效），避免机械重复。"
+character = "被淘汰/伤害的配角必须至少有一个暗示其个人故事的细节，让淘汰有重量。"
+language = "恐怖用事实传达，不用情绪标签。克制叙事：越恐怖越冷静。句子随恐惧升级而变短，但叙述者语气始终平稳。"
+
+[craft.style_defaults]
+avg_sentence_length = 25
+avg_paragraph_length = 80
+
+[craft.world_modules]
+required = ["power_system", "geography", "history", "drive", "factions", "resources"]
+extra = ["rule_system", "sanity_system"]
+
+[craft.world_modules.emphasis]
+power_system = "规则体系：规则的发现、验证、利用与打破"
+drive = "对未知的恐惧与对真相的渴望之间的张力"
+resources = "信息即资源：谁知道更多规则谁就拥有权力"
+
+[craft.protagonist]
+identity_hint = "常见起点：普通人/规则敏感者/前世记忆者"
+motivation_hint = "近期：存活 → 中期：掌握规则 → 长期：打破规则/揭示真相"
+arc_hint = "从恐惧到理解，从被动遵守到主动利用规则"
+
+[craft.civilization_norms]
+count = 5
+prompt_hint = "规则怪谈世界中不言自明的规则：不要相信表象、规则会变化、好奇心致命"
+
+[prohibitions]
+items = ["恐怖源头过早完全暴露（未知才恐怖）", "主角无脑刚正面解决一切", "用打脸/升级等爽文套路替代恐怖氛围", "恐怖元素与日常场景割裂", "角色面对恐怖事件完全不害怕", "用大量血腥描写替代心理恐惧"]
+
+[craft.golden_three]
+chapter_1_structure = "事件→背景→发展→钩子"
+chapter_1_rules = [
+    "前300字必须有强冲突（死亡/背叛/危机），拒绝流水账",
+    "500字内主角亮相，用动作/台词立人设",
+    "世界观用10-20字极简点出，不堆设定",
+    "章末必须有'下一章会怎样'的强烈钩子",
+]
+chapter_2_structure = "信息→发展→钩子"
+chapter_2_rules = [
+    "金手指必须在第2章亮相，用戏剧性场景展示",
+    "金手指首次使用有明显效果，规则简单清晰",
+    "补充人物关系和世界观细节，但通过剧情展示而非叙述",
+    "冲突升级：叠加人际/资源/认知三重压力",
+]
+chapter_3_structure = "阻碍→升级→期待感"
+chapter_3_rules = [
+    "必须有至少1个爽点（打脸/收获/反转）",
+    "每800字设一个情绪爆点",
+    "章末设置信息差/危机预告/选择困境钩子",
+    "让读者产生'必须读第四章'的冲动",
+]
+
+[audit]
+dimensions = [1, 2, 3, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26]

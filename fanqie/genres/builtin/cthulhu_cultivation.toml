@@ -1,0 +1,70 @@
+[meta]
+name = "克系修仙"
+id = "cthulhu_cultivation"
+description = "克苏鲁神话体系下的修仙题材，san值替代道心，诡异替代天劫"
+
+[craft]
+chapter_types = ["诡异章", "修炼章", "揭示章", "战斗章", "回收章"]
+fatigue_words = ["不可名状", "san值", "疯狂", "呓语", "触手", "深渊", "古老", "禁忌", "污染", "扭曲"]
+numerical_system = true
+power_scaling = true
+era_research = false
+pacing_rule = "诡异事件→san值危机→修炼突破→真相揭示→更高层诡异，螺旋上升"
+satisfaction_types = ["san值突破", "诡异反杀", "真相揭示", "获得禁忌知识", "道心稳固"]
+
+[craft.rules]
+atmosphere = "克系恐怖的不可知感与修仙的力量追求形成张力。san值系统替代传统道心。"
+pacing = "每5章一个诡异事件，每15章一个世界观揭示。san值不能无限下降，要有恢复机制。"
+character = "角色面对不可知恐怖时的反应要真实。san值影响角色行为。"
+language = "恐怖描写要克制，用事实传达诡异。修炼体系要自洽。"
+
+[craft.style_defaults]
+avg_sentence_length = 28
+avg_paragraph_length = 85
+
+[craft.world_modules]
+required = ["power_system", "geography", "history", "drive", "factions", "resources"]
+extra = ["sanity_system"]
+
+[craft.world_modules.emphasis]
+power_system = "修炼体系与克系力量的融合：san值替代道心，诡异替代天劫"
+drive = "对力量的追求与对疯狂的恐惧之间的永恒张力"
+resources = "禁忌知识即资源：知道越多越强大也越危险"
+
+[craft.protagonist]
+identity_hint = "常见起点：特殊体质/古老血脉/禁忌知识的继承者"
+motivation_hint = "近期：生存/控制污染 → 中期：掌握禁忌力量 → 长期：直面古神/超越"
+arc_hint = "从恐惧疯狂到接纳疯狂，从逃避真相到直面真相"
+
+[craft.civilization_norms]
+count = 5
+prompt_hint = "克系修仙世界中不言自明的规则：知识有代价、疯狂是常态、古神不可直视"
+
+[prohibitions]
+items = ["诡异源头过早完全暴露", "san值系统形同虚设", "主角免疫一切精神污染", "克系元素沦为战力标签", "修炼体系与克系设定矛盾"]
+
+[craft.golden_three]
+chapter_1_structure = "事件→背景→发展→钩子"
+chapter_1_rules = [
+    "前300字必须有强冲突（死亡/背叛/危机），拒绝流水账",
+    "500字内主角亮相，用动作/台词立人设",
+    "世界观用10-20字极简点出，不堆设定",
+    "章末必须有'下一章会怎样'的强烈钩子",
+]
+chapter_2_structure = "信息→发展→钩子"
+chapter_2_rules = [
+    "金手指必须在第2章亮相，用戏剧性场景展示",
+    "金手指首次使用有明显效果，规则简单清晰",
+    "补充人物关系和世界观细节，但通过剧情展示而非叙述",
+    "冲突升级：叠加人际/资源/认知三重压力",
+]
+chapter_3_structure = "阻碍→升级→期待感"
+chapter_3_rules = [
+    "必须有至少1个爽点（打脸/收获/反转）",
+    "每800字设一个情绪爆点",
+    "章末设置信息差/危机预告/选择困境钩子",
+    "让读者产生'必须读第四章'的冲动",
+]
+
+[audit]
+dimensions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26]

@@ -1,0 +1,69 @@
+[meta]
+name = "全民穿越求生"
+id = "mass_isekai"
+description = "全民穿越到异世界/游戏世界，在残酷规则下求生的题材"
+
+[craft]
+chapter_types = ["降临章", "探索章", "冲突章", "发育章", "高潮章"]
+fatigue_words = ["倒吸一口凉气", "瞳孔一缩", "头皮发麻", "难以置信", "竟然", "居然", "不可思议", "恐怖如斯", "震撼", "震惊"]
+numerical_system = true
+power_scaling = true
+era_research = false
+pacing_rule = "降临→恐慌→适应→发育→冲突→扩张→高潮，循环推进"
+satisfaction_types = ["打脸", "升级", "获得稀有道具", "反杀", "势力扩张", "隐藏信息揭示"]
+
+[craft.rules]
+atmosphere = "开局要快，第一章就穿越。前10章建立生存压力。中期加入势力博弈。"
+pacing = "每3章一个小高潮（战斗/收获），每10章一个大高潮（势力对抗/关键抉择）。"
+character = "配角要有明确的生存策略和利益诉求，不能只是主角的工具人。"
+language = "战斗描写要有画面感。数值体系要前后一致。对话要体现角色性格。"
+
+[craft.style_defaults]
+avg_sentence_length = 22
+avg_paragraph_length = 70
+
+[craft.world_modules]
+required = ["power_system", "geography", "history", "drive", "factions", "resources"]
+
+[craft.world_modules.emphasis]
+power_system = "穿越能力体系：职业/技能/天赋系统、等级划分、成长路径"
+drive = "生存竞争与排名压力：所有人都在变强，不进则退"
+resources = "稀有道具的稀缺性、获取机制、交易与争夺"
+
+[craft.protagonist]
+identity_hint = "常见起点：重生者/先知/特殊职业/隐藏天赋"
+motivation_hint = "近期：生存适应 → 中期：建立势力 → 长期：登顶/揭开世界真相"
+arc_hint = "从适应者到引领者，从个体强者到势力领袖"
+
+[craft.civilization_norms]
+count = 5
+prompt_hint = "穿越世界中不言自明的规则：实力至上、信息即权力、合作有限"
+
+[prohibitions]
+items = ["主角开局就无敌", "配角降智衬托主角", "数值体系前后矛盾", "无脑开挂不解释", "所有女性角色爱上主角", "战斗描写千篇一律"]
+
+[craft.golden_three]
+chapter_1_structure = "事件→背景→发展→钩子"
+chapter_1_rules = [
+    "前300字必须有强冲突（死亡/背叛/危机），拒绝流水账",
+    "500字内主角亮相，用动作/台词立人设",
+    "世界观用10-20字极简点出，不堆设定",
+    "章末必须有'下一章会怎样'的强烈钩子",
+]
+chapter_2_structure = "信息→发展→钩子"
+chapter_2_rules = [
+    "金手指必须在第2章亮相，用戏剧性场景展示",
+    "金手指首次使用有明显效果，规则简单清晰",
+    "补充人物关系和世界观细节，但通过剧情展示而非叙述",
+    "冲突升级：叠加人际/资源/认知三重压力",
+]
+chapter_3_structure = "阻碍→升级→期待感"
+chapter_3_rules = [
+    "必须有至少1个爽点（打脸/收获/反转）",
+    "每800字设一个情绪爆点",
+    "章末设置信息差/危机预告/选择困境钩子",
+    "让读者产生'必须读第四章'的冲动",
+]
+
+[audit]
+dimensions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26]

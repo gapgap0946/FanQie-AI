@@ -1,0 +1,70 @@
+[meta]
+name = "诡异降临"
+id = "weird_descend"
+description = "诡异力量降临现实世界，普通人觉醒能力对抗诡异的题材"
+
+[craft]
+chapter_types = ["降临章", "觉醒章", "诡异事件章", "战斗章", "揭示章"]
+fatigue_words = ["诡异", "降临", "觉醒", "污染", "扭曲", "不可名状", "san值", "深渊", "禁忌", "古老"]
+numerical_system = true
+power_scaling = true
+era_research = false
+pacing_rule = "诡异降临→能力觉醒→对抗诡异→真相揭示→更高层诡异，螺旋上升"
+satisfaction_types = ["能力觉醒", "诡异反杀", "真相揭示", "打脸", "保护他人", "获得稀有道具"]
+
+[craft.rules]
+atmosphere = "诡异感要真实：日常场景的异常化。能力体系要有代价和限制。"
+pacing = "每5章一个诡异事件，每15章一个世界观揭示。能力成长要有节奏。"
+character = "普通人对诡异的反应要真实。配角的能力要有独特性。"
+language = "恐怖用事实传达。能力描写要有画面感。对话要体现角色状态。"
+
+[craft.style_defaults]
+avg_sentence_length = 24
+avg_paragraph_length = 75
+
+[craft.world_modules]
+required = ["power_system", "geography", "history", "drive", "factions", "resources"]
+extra = ["anomaly_system"]
+
+[craft.world_modules.emphasis]
+power_system = "觉醒能力体系：能力类型、等级划分、觉醒条件、代价与限制"
+drive = "日常世界的崩塌与重建：普通人如何在诡异中寻找安全感"
+resources = "诡异物品即资源：封印物、遗物、禁忌道具"
+
+[craft.protagonist]
+identity_hint = "常见起点：普通人/特殊体质/组织成员"
+motivation_hint = "近期：自保/保护家人 → 中期：建立组织 → 长期：对抗诡异源头"
+arc_hint = "从被动应对到主动出击，从个体到领袖"
+
+[craft.civilization_norms]
+count = 5
+prompt_hint = "诡异降临世界中不言自明的规则：日常不再安全、能力有代价、信息即生命"
+
+[prohibitions]
+items = ["诡异源头过早完全暴露", "主角能力无限制", "诡异沦为战力标签", "所有觉醒者都加入主角阵营", "能力体系前后矛盾"]
+
+[craft.golden_three]
+chapter_1_structure = "事件→背景→发展→钩子"
+chapter_1_rules = [
+    "前300字必须有强冲突（死亡/背叛/危机），拒绝流水账",
+    "500字内主角亮相，用动作/台词立人设",
+    "世界观用10-20字极简点出，不堆设定",
+    "章末必须有'下一章会怎样'的强烈钩子",
+]
+chapter_2_structure = "信息→发展→钩子"
+chapter_2_rules = [
+    "金手指必须在第2章亮相，用戏剧性场景展示",
+    "金手指首次使用有明显效果，规则简单清晰",
+    "补充人物关系和世界观细节，但通过剧情展示而非叙述",
+    "冲突升级：叠加人际/资源/认知三重压力",
+]
+chapter_3_structure = "阻碍→升级→期待感"
+chapter_3_rules = [
+    "必须有至少1个爽点（打脸/收获/反转）",
+    "每800字设一个情绪爆点",
+    "章末设置信息差/危机预告/选择困境钩子",
+    "让读者产生'必须读第四章'的冲动",
+]
+
+[audit]
+dimensions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26]

@@ -1,0 +1,69 @@
+[meta]
+name = "末世"
+id = "apocalypse"
+description = "末世生存，丧尸/灾难/废土，资源争夺+人性考验"
+
+[craft]
+chapter_types = ["降临章", "生存章", "冲突章", "探索章", "高潮章"]
+fatigue_words = ["末日", "丧尸", "变异", "幸存者", "物资", "绝望", "挣扎", "残酷", "人性", "黑暗"]
+numerical_system = false
+power_scaling = false
+era_research = false
+pacing_rule = "灾难降临→生存挣扎→建立据点→势力冲突→更大危机，循环推进"
+satisfaction_types = ["反杀", "获得物资", "据点扩张", "打脸", "人性光辉", "复仇"]
+
+[craft.rules]
+atmosphere = "末世感要真实：物资稀缺、信任危机、道德困境。生存是第一驱动力。"
+pacing = "每3章一个生存危机，每10章一个势力冲突。不能一直高压，要有喘息。"
+character = "配角要有明确的生存策略。死亡要有重量，不能随意发便当。"
+language = "环境描写要有末世感。动作描写要利落。对话要体现生存压力。"
+
+[craft.style_defaults]
+avg_sentence_length = 18
+avg_paragraph_length = 60
+
+[craft.world_modules]
+required = ["power_system", "geography", "history", "drive", "factions", "resources"]
+
+[craft.world_modules.emphasis]
+power_system = "末世能力体系：异能等级、觉醒条件、代价与限制"
+drive = "生存是唯一动力：物资、安全、重建文明"
+resources = "物资稀缺性、分配机制、争夺与垄断"
+
+[craft.protagonist]
+identity_hint = "常见起点：普通幸存者/重生者/特殊能力觉醒者"
+motivation_hint = "近期：生存 → 中期：建立据点 → 长期：重建文明/揭开末世真相"
+arc_hint = "从自保到担当，从个体生存到群体领袖"
+
+[craft.civilization_norms]
+count = 5
+prompt_hint = "末世中不言自明的规则：信任稀缺、物资至上、弱肉强食"
+
+[prohibitions]
+items = ["主角开局就无敌", "物资无限不解释", "丧尸沦为背景板", "人性描写过于黑白分明", "所有幸存者都爱上主角", "末世设定前后矛盾"]
+
+[craft.golden_three]
+chapter_1_structure = "事件→背景→发展→钩子"
+chapter_1_rules = [
+    "前300字必须有强冲突（死亡/背叛/危机），拒绝流水账",
+    "500字内主角亮相，用动作/台词立人设",
+    "世界观用10-20字极简点出，不堆设定",
+    "章末必须有'下一章会怎样'的强烈钩子",
+]
+chapter_2_structure = "信息→发展→钩子"
+chapter_2_rules = [
+    "金手指必须在第2章亮相，用戏剧性场景展示",
+    "金手指首次使用有明显效果，规则简单清晰",
+    "补充人物关系和世界观细节，但通过剧情展示而非叙述",
+    "冲突升级：叠加人际/资源/认知三重压力",
+]
+chapter_3_structure = "阻碍→升级→期待感"
+chapter_3_rules = [
+    "必须有至少1个爽点（打脸/收获/反转）",
+    "每800字设一个情绪爆点",
+    "章末设置信息差/危机预告/选择困境钩子",
+    "让读者产生'必须读第四章'的冲动",
+]
+
+[audit]
+dimensions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 24, 25, 26]
