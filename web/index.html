@@ -1,19 +1,26 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d1117">
 <title>Fanqie — 爽文AI创作引擎</title>
 <style>
 :root {
+  color-scheme: dark;
   --bg: #0d1117; --bg2: #161b22; --bg3: #21262d; --border: #30363d;
   --text: #c9d1d9; --text2: #8b949e; --accent: #58a6ff;
   --green: #3fb950; --yellow: #d2991d; --red: #f85149; --purple: #a371f7;
   --radius: 8px;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:var(--bg); color:var(--text); min-height:100vh; touch-action:manipulation; -webkit-tap-highlight-color:rgba(88,166,255,.2); }
 a { color:var(--accent); text-decoration:none; }
+
+/* 可访问性：让语义化按钮在充当卡片/行/标签时不带默认按钮外观 */
+.unstyled-btn { font:inherit; color:inherit; text-align:left; background:none; border:none; width:100%; cursor:pointer; }
+:focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
+.visually-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 
 .app { display:flex; height:100vh; }
 .sidebar { width:260px; background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; }
@@ -39,16 +46,17 @@ a { color:var(--accent); text-decoration:none; }
 .card-header { font-size:14px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
 .card-body { font-size:13px; color:var(--text2); }
 
-.book-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius); cursor:pointer; transition:background .15s; margin-bottom:2px; position:relative; }
+.book-item { display:flex; align-items:center; border-radius:var(--radius); margin-bottom:2px; position:relative; }
 .book-item:hover { background:var(--bg3); }
 .book-item:hover .book-delete { display:flex; }
 .book-item.active { background:var(--bg3); border:1px solid var(--accent); }
+.book-select { display:flex; align-items:center; gap:10px; padding:10px 12px; cursor:pointer; transition:background .15s; }
 .book-delete { display:none; position:absolute; right:8px; top:50%; transform:translateY(-50%); width:22px; height:22px; border-radius:50%; background:var(--red); color:#fff; border:none; cursor:pointer; font-size:12px; align-items:center; justify-content:center; opacity:.7; }
 .book-delete:hover { opacity:1; }
 .book-icon { width:32px; height:32px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
-.book-info { flex:1; min-width:0; }
-.book-title { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.book-meta { font-size:11px; color:var(--text2); }
+.book-info { flex:1; min-width:0; display:block; }
+.book-title { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; }
+.book-meta { font-size:11px; color:var(--text2); display:block; }
 .status-dot { width:6px; height:6px; border-radius:50%; display:inline-block; }
 .status-ready { background:var(--green); }
 .status-writing { background:var(--accent); }
@@ -58,23 +66,23 @@ a { color:var(--accent); text-decoration:none; }
 .form-label { display:block; font-size:12px; color:var(--text2); margin-bottom:4px; }
 .form-input, .form-select, .form-textarea { width:100%; padding:8px 12px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-size:13px; }
 .form-textarea { resize:vertical; min-height:80px; font-family:inherit; }
-.form-input:focus, .form-select:focus, .form-textarea:focus { outline:none; border-color:var(--accent); }
+.form-input:focus, .form-select:focus, .form-textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 2px rgba(88,166,255,.35); }
 .form-row { display:flex; gap:12px; }
 .form-row > * { flex:1; }
 
 .tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:16px; }
-.tab { padding:8px 16px; font-size:13px; cursor:pointer; border-bottom:2px solid transparent; color:var(--text2); transition:all .15s; }
+.tab { padding:8px 16px; font-size:13px; cursor:pointer; border:none; border-bottom:2px solid transparent; background:none; color:var(--text2); transition:color .15s, border-color .15s; font-family:inherit; }
 .tab:hover { color:var(--text); }
 .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
 
 .content-area { max-width:900px; }
 .chapter-list { max-height:400px; overflow-y:auto; }
-.chapter-row { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:4px; cursor:pointer; font-size:13px; }
+.chapter-row { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:4px; cursor:pointer; font-size:13px; width:100%; border:none; background:none; color:inherit; font-family:inherit; text-align:left; content-visibility:auto; contain-intrinsic-size:auto 32px; }
 .chapter-row:hover { background:var(--bg3); }
-.chapter-num { color:var(--text2); width:50px; flex-shrink:0; }
+.chapter-num { color:var(--text2); width:50px; flex-shrink:0; font-variant-numeric:tabular-nums; }
 .chapter-title-text { flex:1; }
-.chapter-words { color:var(--text2); font-size:11px; width:60px; text-align:right; }
-.chapter-score { width:40px; text-align:right; font-size:11px; }
+.chapter-words { color:var(--text2); font-size:11px; width:60px; text-align:right; font-variant-numeric:tabular-nums; }
+.chapter-score { width:40px; text-align:right; font-size:11px; font-variant-numeric:tabular-nums; }
 
 .story-content { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:20px; font-size:14px; line-height:1.8; white-space:pre-wrap; max-height:70vh; overflow-y:auto; }
 .story-content h1 { font-size:20px; margin-bottom:16px; }
@@ -89,7 +97,7 @@ a { color:var(--accent); text-decoration:none; }
 .progress-panel { position:fixed; bottom:0; right:0; width:380px; max-height:50vh; background:var(--bg2); border:1px solid var(--border); border-radius:12px 12px 0 0; box-shadow:0 -4px 20px rgba(0,0,0,.4); z-index:900; display:none; flex-direction:column; }
 .progress-panel.visible { display:flex; }
 .progress-header { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--border); cursor:pointer; }
-.progress-header h3 { font-size:13px; display:flex; align-items:center; gap:8px; }
+.progress-header h3, .progress-title { font-size:13px; display:flex; align-items:center; gap:8px; }
 .progress-body { flex:1; overflow-y:auto; padding:12px; }
 .progress-bar-wrap { background:var(--bg3); border-radius:4px; height:6px; margin:8px 0; overflow:hidden; }
 .progress-bar { height:100%; border-radius:4px; transition:width .5s; }
@@ -110,7 +118,7 @@ a { color:var(--accent); text-decoration:none; }
 .empty-icon { font-size:48px; margin-bottom:12px; }
 
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:999; }
-.modal { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:24px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; }
+.modal { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:24px; width:90%; max-width:600px; max-height:80vh; overflow-y:auto; overscroll-behavior:contain; }
 .modal h2 { font-size:16px; margin-bottom:16px; }
 .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
 
@@ -134,12 +142,16 @@ a { color:var(--accent); text-decoration:none; }
 .chat-bubble.ai { align-self:flex-start; background:var(--bg3); color:var(--text); border-bottom-left-radius:4px; }
 .chat-input-area { display:flex; gap:8px; padding:10px 12px; border-top:1px solid var(--border); flex-shrink:0; }
 .chat-input { flex:1; padding:8px 12px; background:var(--bg); border:none; border-radius:var(--radius); color:var(--text); font-size:13px; }
-.chat-input:focus { outline:none; }
+.chat-input:focus { outline:none; box-shadow:0 0 0 2px rgba(88,166,255,.35); }
 .chat-send-btn { flex-shrink:0; }
 
 @media (max-width:1024px) {
   .chat-panel { display:none; }
   .chat-panel.mobile-visible { display:flex; position:fixed; top:0; right:0; bottom:0; z-index:950; width:320px; box-shadow:-4px 0 20px rgba(0,0,0,.4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
 }
 </style>
 </head>
@@ -147,22 +159,23 @@ a { color:var(--accent); text-decoration:none; }
 <div class="app">
   <aside class="sidebar">
     <div class="sidebar-header"><h1>🍅 Fanqie</h1><p>爽文AI创作引擎</p></div>
-    <nav class="sidebar-nav" id="bookList"><div class="loading"><div class="spinner"></div>加载中...</div></nav>
+    <nav class="sidebar-nav" id="bookList"><div class="loading"><div class="spinner"></div>加载中…</div></nav>
     <div class="sidebar-footer"><button class="btn btn-primary btn-block btn-sm" onclick="showNewBookModal()">+ 创建新书</button><button class="btn btn-block btn-sm" onclick="showGenreModal()" style="margin-top:6px;">🎭 题材管理</button><button class="btn btn-block btn-sm" onclick="toggleChat()" style="margin-top:6px;">💬 AI 点子王</button><button class="btn btn-block btn-sm" onclick="showLLMConfigModal()" style="margin-top:6px;">⚙️ LLM 配置</button></div>
   </aside>
   <main class="main" id="mainContent"><div class="empty"><div class="empty-icon">📖</div><p>选择一本书或创建新书开始</p></div></main>
 
   <!-- AI Chat Panel -->
   <div class="chat-panel" id="chatPanel">
-    <div class="chat-header" onclick="toggleChat()">
-      <span>💬 AI 点子王</span>
-      <span id="chatToggleIcon">◀</span>
-    </div>
-    <div class="chat-messages" id="chatMessages">
+    <button type="button" class="chat-header unstyled-btn" onclick="toggleChat()" aria-label="展开或收起 AI 点子王面板" aria-expanded="true" id="chatToggleBtn">
+      <span aria-hidden="true">💬 AI 点子王</span>
+      <span id="chatToggleIcon" aria-hidden="true">◀</span>
+    </button>
+    <div class="chat-messages" id="chatMessages" role="log" aria-live="polite">
       <div class="chat-bubble ai">嘿！我是你的创意顾问，专精网文设定和剧情设计。有什么想法想聊聊？</div>
     </div>
     <div class="chat-input-area">
-      <input class="chat-input" id="chatInput" placeholder="聊聊你的故事想法..." onkeydown="if(event.key==='Enter')sendChat()">
+      <label class="visually-hidden" for="chatInput">和 AI 点子王聊聊</label>
+      <input class="chat-input" id="chatInput" name="chat-message" autocomplete="off" placeholder="聊聊你的故事想法…" onkeydown="if(event.key==='Enter')sendChat()">
       <button class="btn btn-primary btn-sm chat-send-btn" onclick="sendChat()">发送</button>
     </div>
   </div>
@@ -170,28 +183,28 @@ a { color:var(--accent); text-decoration:none; }
 
 <!-- Progress Panel -->
 <div class="progress-panel" id="progressPanel">
-  <div class="progress-header" onclick="toggleProgress()">
-    <h3><span id="progressIcon">⏳</span> <span id="progressLabel">就绪</span></h3>
+  <button type="button" class="progress-header unstyled-btn" onclick="toggleProgress()" aria-label="展开或收起任务进度面板">
+    <span class="progress-title"><span id="progressIcon" aria-hidden="true">⏳</span> <span id="progressLabel">就绪</span></span>
     <span style="font-size:11px;color:var(--text2);" id="progressTime"></span>
-  </div>
+  </button>
   <div class="progress-body">
     <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
-    <div class="progress-status"><span id="progressStatus">等待中...</span><span id="progressPercent">0%</span></div>
+    <div class="progress-status" aria-live="polite"><span id="progressStatus">等待中…</span><span id="progressPercent">0%</span></div>
     <div class="progress-log" id="progressLog"></div>
   </div>
 </div>
 
 <!-- New Book Modal -->
-<div class="modal-overlay" id="newBookModal" style="display:none">
+<div class="modal-overlay" id="newBookModal" role="dialog" aria-modal="true" aria-label="创建新书" style="display:none">
   <div class="modal">
     <h2>📝 创建新书</h2>
-    <div class="form-group"><label class="form-label">书名 *</label><input class="form-input" id="newTitle" placeholder="输入书名..."></div>
+    <div class="form-group"><label class="form-label" for="newTitle">书名 *</label><input class="form-input" id="newTitle" name="book-title" autocomplete="off" placeholder="输入书名，如「剑破苍穹」…"></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">题材</label><select class="form-select" id="newGenre"></select></div>
-      <div class="form-group"><label class="form-label">每章字数</label><input class="form-input" id="newWords" type="number" value="2200"></div>
-      <div class="form-group"><label class="form-label">目标章数</label><input class="form-input" id="newChapters" type="number" value="200"></div>
+      <div class="form-group"><label class="form-label" for="newGenre">题材</label><select class="form-select" id="newGenre" name="genre"></select></div>
+      <div class="form-group"><label class="form-label" for="newWords">每章字数</label><input class="form-input" id="newWords" name="words" type="number" inputmode="numeric" min="500" max="10000" value="2200"></div>
+      <div class="form-group"><label class="form-label" for="newChapters">目标章数</label><input class="form-input" id="newChapters" name="chapters" type="number" inputmode="numeric" min="1" max="2000" value="200"></div>
     </div>
-    <div class="form-group"><label class="form-label">创意简报（可选）</label><textarea class="form-textarea" id="newBrief" placeholder="描述你的故事创意..."></textarea></div>
+    <div class="form-group"><label class="form-label" for="newBrief">创意简报（可选）</label><textarea class="form-textarea" id="newBrief" name="brief" placeholder="描述你的故事创意，如「废柴少年觉醒上古血脉…」…"></textarea></div>
     <div class="modal-actions">
       <button class="btn" onclick="hideNewBookModal()">取消</button>
       <button class="btn btn-primary" id="btnCreate" onclick="createBook()">创建（含Foundation生成）</button>
@@ -200,13 +213,13 @@ a { color:var(--accent); text-decoration:none; }
 </div>
 
 <!-- Write Modal -->
-<div class="modal-overlay" id="writeModal" style="display:none">
+<div class="modal-overlay" id="writeModal" role="dialog" aria-modal="true" aria-label="写章节" style="display:none">
   <div class="modal">
     <h2>✍️ 写章节</h2>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">生成章数</label><input class="form-input" id="writeCount" type="number" value="1" min="1" max="10"></div>
+      <div class="form-group"><label class="form-label" for="writeCount">生成章数</label><input class="form-input" id="writeCount" name="write-count" type="number" inputmode="numeric" value="1" min="1" max="10"></div>
     </div>
-    <div class="form-group"><label class="form-label">干预指令（可选）</label><input class="form-input" id="writeInstruction" placeholder="如：本章重点写战斗场面"></div>
+    <div class="form-group"><label class="form-label" for="writeInstruction">干预指令（可选）</label><input class="form-input" id="writeInstruction" name="write-instruction" autocomplete="off" placeholder="如：本章重点写战斗场面…"></div>
     <div class="modal-actions">
       <button class="btn" onclick="hideWriteModal()">取消</button>
       <button class="btn btn-green" id="btnWrite" onclick="writeChapter()">开始写作</button>
@@ -215,10 +228,10 @@ a { color:var(--accent); text-decoration:none; }
 </div>
 
 <!-- Advise Modal -->
-<div class="modal-overlay" id="adviseModal" style="display:none">
+<div class="modal-overlay" id="adviseModal" role="dialog" aria-modal="true" aria-label="人机协作编辑" style="display:none">
   <div class="modal">
     <h2>🔧 人机协作编辑</h2>
-    <div class="form-group"><label class="form-label">修改意见</label><textarea class="form-textarea" id="adviseInstruction" placeholder="如：把主角的金手指改成..."></textarea></div>
+    <div class="form-group"><label class="form-label" for="adviseInstruction">修改意见</label><textarea class="form-textarea" id="adviseInstruction" name="advise-instruction" placeholder="如：把主角的金手指改成…"></textarea></div>
     <div class="modal-actions">
       <button class="btn" onclick="hideAdviseModal()">取消</button>
       <button class="btn btn-primary" id="btnAdvise" onclick="doAdvise()">分析并修改</button>
@@ -227,21 +240,21 @@ a { color:var(--accent); text-decoration:none; }
 </div>
 
 <!-- Genre Modal -->
-<div class="modal-overlay" id="genreModal" style="display:none">
+<div class="modal-overlay" id="genreModal" role="dialog" aria-modal="true" aria-label="题材管理" style="display:none">
   <div class="modal" style="max-width:700px;">
     <h2>🎭 题材管理</h2>
     <div style="display:flex;gap:12px;">
       <div style="flex:1;">
-        <div class="form-label">现有题材</div>
-        <select class="form-select" id="genreSelect" size="8" onchange="loadGenreDetail()" style="height:auto;"></select>
+        <label class="form-label" for="genreSelect">现有题材</label>
+        <select class="form-select" id="genreSelect" name="genre-select" size="8" onchange="loadGenreDetail()" style="height:auto;"></select>
       </div>
       <div style="flex:2;">
         <div class="form-label">创建新题材</div>
         <div class="form-row">
-          <div class="form-group"><input class="form-input" id="newGenreId" placeholder="题材ID（英文）"></div>
-          <div class="form-group"><select class="form-select" id="newGenreBase"></select></div>
+          <div class="form-group"><label class="visually-hidden" for="newGenreId">题材 ID</label><input class="form-input" id="newGenreId" name="genre-id" autocomplete="off" spellcheck="false" placeholder="题材ID（英文）"></div>
+          <div class="form-group"><label class="visually-hidden" for="newGenreBase">基础模板</label><select class="form-select" id="newGenreBase" name="genre-base"></select></div>
         </div>
-        <div class="form-group"><label class="form-label">TOML 配置（可选，留空则复制基础模板）</label><textarea class="form-textarea" id="newGenreToml" placeholder="留空则基于所选模板创建..." style="min-height:200px;font-family:Consolas,monospace;font-size:11px;"></textarea></div>
+        <div class="form-group"><label class="form-label" for="newGenreToml">TOML 配置（可选，留空则复制基础模板）</label><textarea class="form-textarea" id="newGenreToml" name="genre-toml" spellcheck="false" placeholder="留空则基于所选模板创建…" style="min-height:200px;font-family:Consolas,monospace;font-size:11px;"></textarea></div>
         <button class="btn btn-primary btn-sm" onclick="createGenre()">创建题材</button>
       </div>
     </div>
@@ -250,15 +263,15 @@ a { color:var(--accent); text-decoration:none; }
 </div>
 
 <!-- LLM Config Modal -->
-<div class="modal-overlay" id="llmConfigModal" style="display:none">
+<div class="modal-overlay" id="llmConfigModal" role="dialog" aria-modal="true" aria-label="LLM 配置" style="display:none">
   <div class="modal" style="max-width:500px;">
     <h2>⚙️ LLM 配置</h2>
-    <div class="form-group"><label class="form-label">API 地址 (Base URL)</label><input class="form-input" id="llmBaseUrl" placeholder="https://api.openai.com/v1"></div>
-    <div class="form-group"><label class="form-label">API Key</label><input class="form-input" id="llmApiKey" type="password" placeholder="sk-..."></div>
-    <div class="form-group"><label class="form-label">模型名称</label><input class="form-input" id="llmModel" placeholder="gpt-4o"></div>
+    <div class="form-group"><label class="form-label" for="llmBaseUrl">API 地址 (Base URL)</label><input class="form-input" id="llmBaseUrl" name="llm-base-url" type="url" autocomplete="off" spellcheck="false" placeholder="https://api.openai.com/v1"></div>
+    <div class="form-group"><label class="form-label" for="llmApiKey">API Key</label><input class="form-input" id="llmApiKey" name="llm-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…"></div>
+    <div class="form-group"><label class="form-label" for="llmModel">模型名称</label><input class="form-input" id="llmModel" name="llm-model" autocomplete="off" spellcheck="false" placeholder="gpt-4o"></div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Temperature</label><input class="form-input" id="llmTemperature" type="number" step="0.1" min="0" max="2" placeholder="0.7"></div>
-      <div class="form-group"><label class="form-label">Max Tokens</label><input class="form-input" id="llmMaxTokens" type="number" step="100" min="100" max="128000" placeholder="4096"></div>
+      <div class="form-group"><label class="form-label" for="llmTemperature">Temperature</label><input class="form-input" id="llmTemperature" name="llm-temperature" type="number" inputmode="decimal" step="0.1" min="0" max="2" placeholder="0.7"></div>
+      <div class="form-group"><label class="form-label" for="llmMaxTokens">Max Tokens</label><input class="form-input" id="llmMaxTokens" name="llm-max-tokens" type="number" inputmode="numeric" step="100" min="100" max="128000" placeholder="4096"></div>
     </div>
     <p style="font-size:11px;color:var(--text2);margin-bottom:12px;">⚠️ 保存后需重启 Web 服务生效</p>
     <div class="modal-actions">
@@ -268,7 +281,7 @@ a { color:var(--accent); text-decoration:none; }
   </div>
 </div>
 
-<div id="toastContainer"></div>
+<div id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 const API = 'http://127.0.0.1:8765';
@@ -296,13 +309,15 @@ function renderBookList(books) {
   el.innerHTML = books.map(b => {
     const sc = b.status==='ready'?'status-ready':b.status==='writing'?'status-writing':'status-draft';
     const icon = {'cthulhu_cultivation':'🐙','xuanhuan':'⚔️','apocalypse':'🧟','mass_isekai':'🌐','rule_horror':'👻','weird_descend':'🌀'}[b.genre_id]||'📖';
-    return `<div class="book-item${b.id===currentBookId?' active':''}" onclick="selectBook('${b.id}')">
-      <div class="book-icon">${icon}</div>
-      <div class="book-info">
-        <div class="book-title">${esc(b.title)}</div>
-        <div class="book-meta"><span class="status-dot ${sc}"></span> ${b.chapters}/${b.target_chapters}章 · ${b.genre_id}</div>
-      </div>
-      <button class="book-delete" onclick="event.stopPropagation();deleteBook('${b.id}','${esc(b.title).replace(/'/g,"\\'")}')" title="删除">×</button>
+    return `<div class="book-item${b.id===currentBookId?' active':''}">
+      <button type="button" class="unstyled-btn book-select" onclick="selectBook('${b.id}')" aria-label="打开《${esc(b.title)}》">
+        <span class="book-icon" aria-hidden="true">${icon}</span>
+        <span class="book-info">
+          <span class="book-title">${esc(b.title)}</span>
+          <span class="book-meta"><span class="status-dot ${sc}"></span> ${b.chapters}/${b.target_chapters}章 · ${b.genre_id}</span>
+        </span>
+      </button>
+      <button type="button" class="book-delete" onclick="event.stopPropagation();deleteBook('${b.id}','${esc(b.title).replace(/'/g,"\\'")}')" aria-label="删除《${esc(b.title)}》">×</button>
     </div>`;
   }).join('');
 }
@@ -337,10 +352,10 @@ function renderMain(book) {
         <h2 style="font-size:20px;">${esc(book.title)}</h2>
         <span style="font-size:12px;color:var(--text2);">${sl} · ${book.genre_id}</span>
       </div>
-      <div class="tabs">
-        <div class="tab${currentTab==='overview'?' active':''}" onclick="switchTab('overview')">概览</div>
-        <div class="tab${currentTab==='chapters'?' active':''}" onclick="switchTab('chapters')">章节 (${book.chapters})</div>
-        <div class="tab${currentTab==='story'?' active':''}" onclick="switchTab('story')">设定</div>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" class="tab${currentTab==='overview'?' active':''}" aria-selected="${currentTab==='overview'}" onclick="switchTab('overview')">概览</button>
+        <button type="button" role="tab" class="tab${currentTab==='chapters'?' active':''}" aria-selected="${currentTab==='chapters'}" onclick="switchTab('chapters')">章节 (${book.chapters})</button>
+        <button type="button" role="tab" class="tab${currentTab==='story'?' active':''}" aria-selected="${currentTab==='story'}" onclick="switchTab('story')">设定</button>
       </div>
       <div id="tabContent"></div>
     </div>`;
@@ -359,7 +374,7 @@ function switchTab(tab) {
 // ---- Overview ----
 async function renderOverview() {
   const el = document.getElementById('tabContent');
-  el.innerHTML = '<div class="loading"><div class="spinner"></div>加载中...</div>';
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
   try {
     const res = await fetch(API + '/api/book?id=' + currentBookId);
     const book = await res.json();
@@ -397,30 +412,30 @@ async function renderOverview() {
 // ---- Chapters ----
 async function renderChapters() {
   const el = document.getElementById('tabContent');
-  el.innerHTML = '<div class="loading"><div class="spinner"></div>加载中...</div>';
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
   try {
     const res = await fetch(API + '/api/chapters?id=' + currentBookId);
     const chapters = await res.json();
     if (!chapters.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📝</div><p>暂无章节，点击"写章节"开始</p></div>'; return; }
     el.innerHTML = `
       <div class="chapter-list">${chapters.map(ch => `
-        <div class="chapter-row" onclick="viewChapter(${ch.chapter_number})">
+        <button type="button" class="chapter-row" onclick="viewChapter(${ch.chapter_number})">
           <span class="chapter-num">第${ch.chapter_number}章</span>
           <span class="chapter-title-text">${esc(ch.title||'无标题')}</span>
           <span class="chapter-words">${ch.word_count}字</span>
           ${ch.audit_score ? `<span class="chapter-score" style="color:${ch.audit_score>=85?'var(--green)':ch.audit_score>=70?'var(--yellow)':'var(--red)'}">${ch.audit_score}分</span>` : ''}
-        </div>`).join('')}</div>
+        </button>`).join('')}</div>
       <div id="chapterContent" style="margin-top:16px;"></div>`;
   } catch(e) { el.innerHTML = '<div class="loading">加载失败</div>'; }
 }
 
 async function viewChapter(num) {
   const el = document.getElementById('chapterContent');
-  el.innerHTML = '<div class="loading"><div class="spinner"></div>加载中...</div>';
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
   try {
     const res = await fetch(API + '/api/chapter?id=' + currentBookId + '&ch=' + num);
     const data = await res.json();
-    el.innerHTML = `<div class="story-content">${data.content||'（空）'}</div>`;
+    el.innerHTML = `<div class="story-content">${data.content ? escHtml(data.content) : '（空）'}</div>`;
   } catch(e) { el.innerHTML = '<div class="loading">加载失败</div>'; }
 }
 
@@ -443,7 +458,7 @@ async function renderStory() {
 
 async function loadStoryFile(filename) {
   const el = document.getElementById('storyContent');
-  el.innerHTML = '<div class="loading"><div class="spinner"></div>加载中...</div>';
+  el.innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
   try {
     const res = await fetch(API + '/api/story-file?id=' + currentBookId + '&file=' + filename);
     const data = await res.json();
@@ -458,7 +473,7 @@ function showProgress(label) {
   panel.classList.add('visible');
   document.getElementById('progressLabel').textContent = label;
   document.getElementById('progressIcon').textContent = '⏳';
-  document.getElementById('progressStatus').textContent = '启动中...';
+  document.getElementById('progressStatus').textContent = '启动中…';
   document.getElementById('progressPercent').textContent = '0%';
   document.getElementById('progressTime').textContent = '';
   document.getElementById('progressLog').textContent = '';
@@ -491,7 +506,7 @@ function updateProgress(task) {
     const lines = task.lines || 0;
     const pct = Math.min(95, Math.max(5, lines * 3));
     bar.style.width = pct + '%';
-    document.getElementById('progressStatus').textContent = '运行中...';
+    document.getElementById('progressStatus').textContent = '运行中…';
     document.getElementById('progressPercent').textContent = pct + '%';
     document.getElementById('progressTime').textContent = `${elapsed}s`;
   }
@@ -535,7 +550,7 @@ async function createBook() {
   const title = document.getElementById('newTitle').value.trim();
   if (!title) { toast('请输入书名', 'error'); return; }
   const btn = document.getElementById('btnCreate');
-  btn.disabled = true; btn.textContent = '提交中...';
+  btn.disabled = true; btn.textContent = '提交中…';
   hideNewBookModal();
 
   try {
@@ -564,7 +579,7 @@ function hideWriteModal() { document.getElementById('writeModal').style.display=
 
 async function writeChapter() {
   const btn = document.getElementById('btnWrite');
-  btn.disabled = true; btn.textContent = '提交中...';
+  btn.disabled = true; btn.textContent = '提交中…';
   hideWriteModal();
 
   try {
@@ -594,7 +609,7 @@ async function doAdvise() {
   const instruction = document.getElementById('adviseInstruction').value.trim();
   if (!instruction) { toast('请输入修改意见', 'error'); return; }
   const btn = document.getElementById('btnAdvise');
-  btn.disabled = true; btn.textContent = '提交中...';
+  btn.disabled = true; btn.textContent = '提交中…';
   hideAdviseModal();
 
   try {
@@ -725,13 +740,13 @@ async function showLLMConfigModal() {
     document.getElementById('llmModel').value = cfg.model || '';
     document.getElementById('llmTemperature').value = cfg.temperature || 0.7;
     document.getElementById('llmMaxTokens').value = cfg.max_tokens || 4096;
-    document.getElementById('llmApiKey').placeholder = cfg.has_key ? '(已设置，留空不修改)' : 'sk-...';
+    document.getElementById('llmApiKey').placeholder = cfg.has_key ? '(已设置，留空不修改)' : 'sk-…';
   } catch(e) {}
 }
 function hideLLMConfigModal() { document.getElementById('llmConfigModal').style.display = 'none'; }
 async function saveLLMConfig() {
   const btn = document.getElementById('btnSaveLLM');
-  btn.disabled = true; btn.textContent = '保存中...';
+  btn.disabled = true; btn.textContent = '保存中…';
   try {
     const body = {
       base_url: document.getElementById('llmBaseUrl').value.trim(),
@@ -756,11 +771,14 @@ async function saveLLMConfig() {
 function toggleChat() {
   const panel = document.getElementById('chatPanel');
   const icon = document.getElementById('chatToggleIcon');
+  const btn = document.getElementById('chatToggleBtn');
   if (window.innerWidth <= 1024) {
-    panel.classList.toggle('mobile-visible');
+    const visible = panel.classList.toggle('mobile-visible');
+    btn.setAttribute('aria-expanded', String(visible));
   } else {
-    panel.classList.toggle('collapsed');
-    icon.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
+    const collapsed = panel.classList.toggle('collapsed');
+    icon.textContent = collapsed ? '▶' : '◀';
+    btn.setAttribute('aria-expanded', String(!collapsed));
   }
 }
 
@@ -820,6 +838,21 @@ function scrollChatToBottom() {
 
 // Load chat history on init
 loadChatHistory();
+
+// ---- Modal 可访问性增强：Escape 关闭 + 点击遮罩关闭 ----
+function closeTopModal() {
+  const open = [...document.querySelectorAll('.modal-overlay')].filter(m => m.style.display === 'flex');
+  if (open.length) { open[open.length - 1].style.display = 'none'; return true; }
+  return false;
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeTopModal();
+});
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('mousedown', (e) => {
+    if (e.target === overlay) overlay.style.display = 'none';
+  });
+});
 </script>
 </body>
 </html>
