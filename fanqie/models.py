@@ -200,6 +200,7 @@ class ChapterMemo(BaseModel):
     is_final: bool = Field(default=False, description="是否为最后一章")
     hooks_to_resolve: list[str] = Field(default_factory=list, description="本章需要回收的伏笔ID列表")
     hooks_to_advance: list[str] = Field(default_factory=list, description="本章需要推进（非回收）的伏笔ID列表")
+    pacing: str = Field(default="", description="本章节奏配方：张力曲线与爽点节拍建议")
 
 
 # ---------------------------------------------------------------------------

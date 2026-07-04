@@ -197,7 +197,8 @@ def build_planner_system_prompt(genre: GenreProfile) -> str:
 爽点类型：{'、'.join(genre.satisfaction_types)}
 输出格式：严格 JSON，包含 goal/reader_waiting_for/pay_off/keep_hidden/transition_duty/key_choice_check/end_changes/must_avoid/style_emphasis/hooks_to_advance
 注意：must_avoid、style_emphasis 和 hooks_to_advance 必须是字符串数组，即使只有一个元素也要用 [] 包裹。
-hooks_to_advance：从"伏笔账本"中挑选本章要推进的伏笔，填写其伏笔ID（如 ch0003_01、core_01），没有则填 []。"""
+hooks_to_advance：从"伏笔账本"中挑选本章要推进的伏笔，填写其伏笔ID（如 ch0003_01、core_01），没有则填 []。
+pacing（字符串）：规划本章节奏配方——判断本章功能（如 铺垫/过渡/冲突升级/爽点爆发/收束），给出张力曲线与爽点节拍建议，不同功能的章节爽点密度应不同，不要千篇一律。"""
 
 
 def build_completion_planner_system_prompt(genre: GenreProfile) -> str:
@@ -419,6 +420,7 @@ def plan_chapter(
         is_final=is_final,
         hooks_to_resolve=hooks_to_resolve,
         hooks_to_advance=hooks_to_advance,
+        pacing=_ensure_str(parsed.get("pacing", "")),
     )
     memo.body = _render_memo_body(memo)
     return memo

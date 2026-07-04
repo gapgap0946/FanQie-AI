@@ -50,11 +50,29 @@ def build_writer_system_prompt(
     style_profile: StyleProfile | None = None,
     is_completion_arc: bool = False,
     is_final: bool = False,
+    pacing: str = "",
 ) -> str:
     """构建 Writer 的 system prompt."""
     fatigue = "、".join(genre.fatigue_words[:8])
     chapter_types = "、".join(genre.chapter_types) if genre.chapter_types else "事件章/过渡章/揭示章/高潮章"
     satisfaction = "、".join(genre.satisfaction_types) if genre.satisfaction_types else "打脸/升级/真相揭示"
+
+    # 爽点密度：优先使用 Planner 给出的本章节奏配方，实现按章节功能差异化，
+    # 缺失时回退到通用密度模板。
+    if pacing.strip():
+        pacing_section = f"""## 本章节奏配方（按本章功能定制，优先遵循）
+
+{pacing.strip()}
+
+说明：不同功能的章节爽点密度不同——铺垫/过渡章重在埋线与呼吸，冲突升级/爆发章才需要高密度爽点。请依据上述配方安排张力曲线，不要机械套用统一密度。
+- 无论何种章节，章末 300 字仍需为下一章制造期待（悬念、新目标或即将到来的冲突）。"""
+    else:
+        pacing_section = """## 爽点密度要求
+
+- 每 300 字必须有 1 个小爽点（如主角展示能力、打脸配角、获得新线索）
+- 每 500 字必须有 1 个中爽点（如"原来如此"的反转）
+- 每 1000-1500 字必须有 1 个大爽点（如"你惹错人了"的爆发）
+- 章末 300 字必须为下一章制造期待（悬念、新目标、或即将到来的冲突）"""
 
     prompt = f"""你是一位专业的{genre.name}网文写手，为番茄小说平台创作高质量章节。
 
@@ -85,12 +103,7 @@ def build_writer_system_prompt(
 - 每章结尾必须有"下一章会怎样"的冲动
 - 反派/对手必须聪明，不能降智
 
-## 爽点密度要求
-
-- 每 300 字必须有 1 个小爽点（如主角展示能力、打脸配角、获得新线索）
-- 每 500 字必须有 1 个中爽点（如"原来如此"的反转）
-- 每 1000-1500 字必须有 1 个大爽点（如"你惹错人了"的爆发）
-- 章末 300 字必须为下一章制造期待（悬念、新目标、或即将到来的冲突）
+{pacing_section}
 
 ## 文笔要求
 
@@ -251,6 +264,7 @@ def write_chapter(
         style_profile=style_profile,
         is_completion_arc=memo.is_completion_arc,
         is_final=memo.is_final,
+        pacing=memo.pacing,
     )
     user_prompt = build_writer_user_prompt(memo, context_pkg, chapter_number, prev_title)
 
