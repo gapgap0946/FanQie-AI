@@ -25,16 +25,34 @@ def settle_chapter(
 ) -> None:
     """章后结算 — 更新摘要、状态、伏笔，完结窗口时追踪进度."""
 
+    # 0. 尝试一次 LLM 结构化摘要（失败则回退到启发式抽取）
+    structured = _generate_structured_summary(client, genre, chapter, memo)
+
+    if structured:
+        characters = "、".join(structured.get("characters", [])[:8]) or _extract_characters(chapter.content)
+        events = structured.get("events") or _summarize_events(chapter.content)
+        mood = structured.get("mood") or _detect_mood(chapter.content)
+        chapter_type = structured.get("chapter_type") or _detect_chapter_type(chapter.content, genre)
+        conflict = structured.get("conflict") or _extract_conflict(chapter.content)
+        protagonist_state = structured.get("protagonist_state") or _extract_protagonist_state(chapter.content)
+    else:
+        characters = _extract_characters(chapter.content)
+        events = _summarize_events(chapter.content)
+        mood = _detect_mood(chapter.content)
+        chapter_type = _detect_chapter_type(chapter.content, genre)
+        conflict = _extract_conflict(chapter.content)
+        protagonist_state = _extract_protagonist_state(chapter.content)
+
     # 1. 生成章节摘要
     summary = ChapterSummary(
         chapter=chapter.chapter_number,
         title=chapter.title,
-        characters=_extract_characters(chapter.content),
-        events=_summarize_events(chapter.content),
+        characters=characters,
+        events=events,
         state_changes=memo.end_changes,
         hook_activity=memo.pay_off,
-        mood=_detect_mood(chapter.content),
-        chapter_type=_detect_chapter_type(chapter.content, genre),
+        mood=mood,
+        chapter_type=chapter_type,
     )
     summaries = state_mgr.load_summaries()
     summaries = [s for s in summaries if s.chapter != chapter.chapter_number]
@@ -46,13 +64,13 @@ def settle_chapter(
     current_state = state_mgr.load_current_state()
     current_state.chapter_number = chapter.chapter_number
 
-    new_facts = _extract_facts_from_chapter(chapter)
+    new_facts = _build_facts(structured, chapter)
     for fact in new_facts:
         current_state.facts.append(fact)
 
-    current_state.current_conflict = _extract_conflict(chapter.content)
+    current_state.current_conflict = conflict
     current_state.current_goal = memo.goal
-    current_state.protagonist_state = _extract_protagonist_state(chapter.content)
+    current_state.protagonist_state = protagonist_state
 
     state_mgr.save_current_state(current_state)
 
@@ -134,6 +152,69 @@ def finalize_book(
 
 # ---- Internal ----
 
+def _generate_structured_summary(
+    client: LLMClient,
+    genre: GenreProfile,
+    chapter: Chapter,
+    memo: ChapterMemo,
+) -> dict | None:
+    """用一次 LLM 调用产出结构化章节摘要.
+
+    返回 events/mood/chapter_type/conflict/protagonist_state/characters/facts，
+    失败时返回 None，由调用方回退到启发式抽取。
+    """
+    chapter_types = "、".join(genre.chapter_types) if genre.chapter_types else "事件章、过渡章、揭示章、高潮章"
+
+    content_sample = chapter.content[:2500]
+    if len(chapter.content) > 3000:
+        content_sample += "\n...\n" + chapter.content[-500:]
+
+    system_prompt = f"""你是{genre.name}题材的章节分析师。请阅读章节正文，提炼结构化摘要。
+
+## 分析要求
+- events：概括本章"真正发生的事件与结果"（60-120字），聚焦推进与变化，不要复述开头铺垫
+- mood：本章主导情绪（如 紧张/爽快/悬疑/温情/绝望/平静 等，单个词）
+- chapter_type：从以下类型中选最贴切的一个：{chapter_types}
+- conflict：本章当前主要冲突（一句话）
+- protagonist_state：本章结束时主角状态（如 受伤/实力提升/正常/占据主动 等）
+- characters：本章出场的主要角色名（数组，最多6个）
+- facts：本章确立的关键结构化事实（数组，每项 subject/predicate/object，最多5条，如 主角/获得/某能力）
+
+## 输出格式（严格 JSON）
+{{
+  "events": "...",
+  "mood": "...",
+  "chapter_type": "...",
+  "conflict": "...",
+  "protagonist_state": "...",
+  "characters": ["..."],
+  "facts": [{{"subject": "...", "predicate": "...", "object": "..."}}]
+}}"""
+
+    user_prompt = f"""## 第{chapter.chapter_number}章《{chapter.title}》
+本章规划目标：{memo.goal}
+
+## 正文
+{content_sample}
+
+请输出结构化摘要 JSON。"""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    try:
+        result = client.chat_json(messages, temperature=0.3)
+        parsed = result.get("parsed")
+    except Exception:
+        return None
+
+    if not isinstance(parsed, dict) or not parsed.get("events"):
+        return None
+    return parsed
+
+
 def _extract_characters(content: str) -> str:
     """从章节内容中提取出场人物."""
     names = re.findall(
@@ -187,7 +268,7 @@ def _detect_chapter_type(content: str, genre: GenreProfile) -> str:
 
 
 def _extract_facts_from_chapter(chapter: Chapter) -> list[Fact]:
-    """从章节中提取结构化事实."""
+    """从章节中提取结构化事实（启发式回退）."""
     facts = []
     cn = chapter.chapter_number
     loc_match = re.search(r"(?:来到|抵达|进入|身处)([^\s，。]{2,8})", chapter.content)
@@ -199,6 +280,33 @@ def _extract_facts_from_chapter(chapter: Chapter) -> list[Fact]:
             valid_from_chapter=cn,
             source_chapter=cn,
         ))
+    return facts
+
+
+def _build_facts(structured: dict | None, chapter: Chapter) -> list[Fact]:
+    """从 LLM 结构化摘要构建事实，失败时回退到启发式抽取."""
+    if not structured:
+        return _extract_facts_from_chapter(chapter)
+
+    cn = chapter.chapter_number
+    facts: list[Fact] = []
+    for item in structured.get("facts", [])[:5]:
+        if not isinstance(item, dict):
+            continue
+        subject = str(item.get("subject", "")).strip()
+        predicate = str(item.get("predicate", "")).strip()
+        obj = str(item.get("object", "")).strip()
+        if subject and predicate and obj:
+            facts.append(Fact(
+                subject=subject,
+                predicate=predicate,
+                object=obj,
+                valid_from_chapter=cn,
+                source_chapter=cn,
+            ))
+
+    if not facts:
+        return _extract_facts_from_chapter(chapter)
     return facts
 
 
